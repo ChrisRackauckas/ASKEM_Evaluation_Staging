@@ -19,6 +19,8 @@ Rs = map(v -> v(t), variables(:R, 1:n_stratify, T = FnType))
 C = map(toparam, variables(:C, 1:n_stratify, 1:n_stratify))
 k = 1000
 uniform_contect_matrix = fill(0.33, (3, 3))
+defs = Dict()
+
 for i in 1:n_stratify
     nn = 2k
     defs[Ns[i]] = nn
