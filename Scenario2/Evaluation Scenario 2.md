@@ -94,14 +94,44 @@ EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, threshold_o
 
 ### Ingest SIDARTHE-V
 
+```@example scenario2
+
+```
+
 ### Setup the Parameters
 
 > Set the same initial values and parameter settings in 1.b.i. Let V(t=0) = 0, τ (in SIDARTHE) = τ2 (in SIDDARTHE-V), and τ1 = (1/3)\*τ2 (reflecting the fact that the mortality rate for critical conditions (state T), will always be larger than for other infected states). Assume that the vaccination rate psi is 0 to start with. The SIDARTHE-V model allows for three main types of interventions: (1) Those that impact the transmission parameters (α, β, γ and δ) – social distancing, masking, lockdown; (2) Those that impact the detection parameters (ε, θ) – testing and contact tracing; (3) Those that impact the vaccination rate psi – vaccination campaigns. Assume previously stated constraints: θ >= 2* ε, and τ1 = (1/3)*τ2.
+
+```@example scenario2
+
+```
 
 ### b.i
 
 > Let’s say our goal is to ensure that the total infected population (sum over all the infected states I, D, A, R, T) never rises above 1/3 of the total population, over the course of the next 100 days. If you could choose only a single intervention (affecting only one parameter), which intervention would let us meet our goal, with minimal change to the intervention parameter? Assume that the intervention will be implemented after one month (t = day 30), and will stay constant after that, over the remaining time period (i.e. the following 70 days). What are equivalent interventions of the other two intervention types, that would have the same impact on total infections?
 
+```@example scenario2
+intervention_parameters = [theta] # Need to figure out what these should be
+[p => EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, threshold_observable, 0.33, 
+                                             p - ModelingToolkit.defaults(sys)[p], [p], [0.0], 
+                                             3 .* [ModelingToolkit.defaults(sys)[p]],
+                                             (30.0,100.0); 
+                                             maxtime=60) for p in intervention_parameters]
+```
+
 ### b.ii
 
 > Let’s say our goal is to get the reproduction number R0 below 1.0, at some point within the next 100 days. Are there interventions that will allow us to meet our goal? If there are multiple options, which single intervention would have the greatest impact on R0 and let us meet our goal with minimal change to the intervention parameter? Assume that the intervention will be implemented after one month (t = day 30), and will stay constant after that, over the remaining time period (i.e. the following 70 days).
+
+```@example scenario2
+R0 = Infected # how is R0 defined from the states?
+```
+
+```@example scenario2
+intervention_parameters = [theta] # Need to figure out what these should be
+[p => EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, R0, 1.0, 
+                                             p - ModelingToolkit.defaults(sys)[p], [p], [0.0], 
+                                             3 .* [ModelingToolkit.defaults(sys)[p]],
+                                             (30.0,100.0); 
+                                             maxtime=60) for p in intervention_parameters]
+```
