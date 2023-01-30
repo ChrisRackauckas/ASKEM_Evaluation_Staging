@@ -1,3 +1,8 @@
+#cd(@__DIR__)
+#using Pkg
+#Pkg.activate(".")
+#Pkg.instantiate()
+
 using Documenter, EasyModelAnalysis
 
 # Make sure that plots don't throw a bunch of warnings / errors!
