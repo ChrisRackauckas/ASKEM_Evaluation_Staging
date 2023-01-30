@@ -203,10 +203,18 @@ sysv = eval(quote
             end)
 # todo set the event flags
 # todo validate the new params 
-prob = ODEProblem(sysv, [], (0, 100))
-sol = solve(prob, Tsit5())
-plot(sol)
-plot(sol, idxs=[og_states; Vaccinated])
+probv = ODEProblem(sysv, [], (0, 100))
+solv = solve(probv, Tsit5())
+plot(solv)
+plot(solv, idxs=[og_states; Vaccinated])
+plot(solt1; idxs = sum(idart))
+
+xmax, xmaxval = get_max_t(probv, sum(idart) * ITALY_POPULATION)
+xmax, xmaxval = get_max_t(probv, sum(idart))
+
+@test isapprox(xmax, 47; atol = 5)
+@test isapprox(xmaxval, 0.6;atol=0.1)
+
 
 # @unpack Infected, Extinct = sys
 
