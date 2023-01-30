@@ -20,7 +20,7 @@ function make_statified_model(pops; pop_assumption = (stratum, pop)->1)
     Is = map(v -> v(t), variables(:I, 1:n_stratify, T = FnType))
     Rs = map(v -> v(t), variables(:R, 1:n_stratify, T = FnType))
     C = map(toparam, variables(:C, 1:n_stratify, 1:n_stratify))
-    uniform_contect_matrix = fill(1/n_stratify, (n_stratify, n_stratify))
+    uniform_contact_matrix = fill(1/n_stratify, (n_stratify, n_stratify))
     defs = Dict()
 
     for (i, nn) in enumerate(pops)
@@ -32,7 +32,7 @@ function make_statified_model(pops; pop_assumption = (stratum, pop)->1)
         defs[Rs[i]] = 0
     end
     for i in eachindex(C)
-        defs[C[i]] = uniform_contect_matrix[i]
+        defs[C[i]] = uniform_contact_matrix[i]
     end
     eqs = [D.(Ss) .~ -β ./ Ns .* Ss .* (C * Is)
         D.(Is) .~ β ./ Ns .* Ss .* (C * Is) .- γ .* Is
@@ -58,10 +58,8 @@ plot(sol, leg = :topright)
 > group preference.
 
 ```@example scenario1
-using Random
-Random.seed!(123)
-contect_matrix = 0.33 * rand(3, 3)
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> contect_matrix))
+contact_matrix = fill(0.1, (3, 3)) + 0.2I
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> contact_matrix))
 sol = solve(prob)
 plot(sol, leg = :topright)
 ```
@@ -71,7 +69,7 @@ plot(sol, leg = :topright)
 > of no contact between age groups.
 
 ```@example scenario1
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> Diagonal(contect_matrix)))
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> Diagonal(contact_matrix)))
 sol = solve(prob)
 plot(sol, leg = :topright)
 ```
@@ -80,7 +78,7 @@ plot(sol, leg = :topright)
 > factor (e.g. multiply by 0.5)
 
 ```@example scenario1
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> 0.5 * contect_matrix))
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> 0.5 * contact_matrix))
 sol = solve(prob)
 plot(sol, leg = :topright)
 ```
@@ -90,7 +88,7 @@ plot(sol, leg = :topright)
 
 ```@example scenario1
 scaling = Diagonal([0.9, 0.8, 0.4])
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> scaling * contect_matrix))
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> scaling * contact_matrix))
 sol = solve(prob)
 plot(sol, leg = :topright)
 ```
@@ -103,19 +101,19 @@ prob = ODEProblem(sys, [], (0, tf), ps)
 sol = solve(prob)
 plt1 = plot(sol, leg = :topright, title = "i")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> contect_matrix)])
+prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> contact_matrix)])
 sol = solve(prob)
 plt2 = plot(sol, leg = :topright, title = "ii")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> Diagonal(contect_matrix))])
+prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> Diagonal(contact_matrix))])
 sol = solve(prob)
 plt3 = plot(sol, leg = :topright, title = "iii")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> 0.5 * contect_matrix)])
+prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> 0.5 * contact_matrix)])
 sol = solve(prob)
 plt4 = plot(sol, leg = :topright, title = "iv")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> scaling * contect_matrix)])
+prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> scaling * contact_matrix)])
 sol = solve(prob)
 plt5 = plot(sol, leg = :topright, title = "v")
 plot(plt1, plt2, plt3, plt4, plt5, size = (1000, 500))
@@ -137,19 +135,19 @@ prob = ODEProblem(sys, [], (0, tf), ps)
 sol = solve(prob)
 plt1 = plot(sol, leg = :topright, title = "i")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> contect_matrix)])
+prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> contact_matrix)])
 sol = solve(prob)
 plt2 = plot(sol, leg = :topright, title = "ii")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> Diagonal(contect_matrix))])
+prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> Diagonal(contact_matrix))])
 sol = solve(prob)
 plt3 = plot(sol, leg = :topright, title = "iii")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> 0.5 * contect_matrix)])
+prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> 0.5 * contact_matrix)])
 sol = solve(prob)
 plt4 = plot(sol, leg = :topright, title = "iv")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> scaling * contect_matrix)])
+prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> scaling * contact_matrix)])
 sol = solve(prob)
 plt5 = plot(sol, leg = :topright, title = "v")
 plot(plt1, plt2, plt3, plt4, plt5, size = (1000, 500))
