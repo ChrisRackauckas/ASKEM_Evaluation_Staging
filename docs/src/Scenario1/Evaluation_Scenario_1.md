@@ -186,8 +186,6 @@ pop_belg = values(CSV.read("data/2022_ Belgium_population_by_age.csv", DataFrame
 pop_assumption(_, nn) = nn*0.0001
 (C, sys_belg) = make_statified_model(pop_belg; pop_assumption)
 
-# TODO: Somethind needs to be done to convert cm_belg to C
-
 prob = ODEProblem(sys_belg, [], (0, tf), vec(C .=> cm_belg))
 sol = solve(prob)
 plot(sol, leg=:topright)
