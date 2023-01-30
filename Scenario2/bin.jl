@@ -17,16 +17,11 @@
 # T, threatened (infected with life-threatening symptoms, detected); 
 # H, healed (recovered); E, extinct (dead). 
 
+cd(@__DIR__)
 using OrdinaryDiffEq, ModelingToolkit, EasyModelAnalysis, SBML, SBMLToolkit, UnPack, Test
 import Plots
 
-@info "usings"
-
-function sub_cont_ev(ev, rules)
-    ModelingToolkit.SymbolicContinuousCallback(substitute(ev.eqs, rules),
-                                               substitute(ev.affect, rules))
-end
-fn = "Scenario2/Giordano2020.xml"
+fn = "Giordano2020.xml"
 
 myread(fn) = readSBML(fn, doc -> begin
                           set_level_and_version(3, 2)(doc)
@@ -54,7 +49,6 @@ sys2 = ODESystem(eqs2, ModelingToolkit.get_iv(sys), states(sys), parameters(sys)
                  continuous_events = evs, defaults = defs, name = nameof(sys))
 ssys = structural_simplify(sys2)
 prob = ODEProblem(ssys, [], (0.0, 100.0))
-
 sol = solve(prob, Tsit5())
 @test sol.retcode == ReturnCode.Success
 Plots.plot(sol)
@@ -98,6 +92,9 @@ xmax, xmaxval = get_max_t(prob_test1, sum(idart) * ITALY_POPULATION)
 # Unit test #2:
 # To reproduce Fig 2b and 2d, set Event_trigger_Fig3b = 0, Event_trigger_Fig3d = 0, Event_trigger_Fig4b = 0, Event_trigger_Fig4d = 0, epsilon_modifer = 1, alpha_modifer = 1 and run for t = 45 d
 # -> These are already the settings in the Model
+
+
+# V model 
 sysv = eval(quote
                 var"##iv#608" = (@variables(t))[1]
                 var"##sts#609" = (collect)(@variables(Infected(t), Healed(t), Extinct(t),
@@ -206,15 +203,14 @@ sysv = eval(quote
 probv = ODEProblem(sysv, [], (0, 100))
 solv = solve(probv, Tsit5())
 plot(solv)
-plot(solv, idxs=[og_states; Vaccinated])
+plot(solv, idxs = [og_states; Vaccinated])
 plot(solt1; idxs = sum(idart))
 
 xmax, xmaxval = get_max_t(probv, sum(idart) * ITALY_POPULATION)
 xmax, xmaxval = get_max_t(probv, sum(idart))
 
 @test isapprox(xmax, 47; atol = 5)
-@test isapprox(xmaxval, 0.6;atol=0.1)
-
+@test isapprox(xmaxval, 0.6; atol = 0.1)
 
 # @unpack Infected, Extinct = sys
 
