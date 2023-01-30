@@ -44,6 +44,8 @@ sol = solve(prob)
 plot(sol, leg = :topright)
 ```
 
+## Question 1
+
 > Simulate this model for the case where there is significant in-group contact
 > preference – you may choose the numbers in the matrix to represent this in-
 > group preference.
@@ -153,3 +155,11 @@ sol = solve(prob)
 plt5 = plot(sol, leg = :topright, title = "v")
 plot(plt1, plt2, plt3, plt4, plt5, size = (1000, 500))
 ```
+
+## Question 2
+
+> Now find real contact matrix data and stratify the basic SIR model with the appropriate number of age groups to match the data found. To simulate the model with realistic initial values, find data on population distribution by age group. As in question 1, let gamma = 1/14 days, and let R0 = 5. Assume gamma, beta, and R0 are the same for all age groups.
+
+> If the data you’ve found supports this, compare the situation for a country with significant multi-generational contact beyond two generations (as indicated by multiple contact matrix diagonal bandings), and for a country without. 
+
+> If the data supports this, try implementing interventions like: (1) School closures (2) Social distancing at work and other locations, but not at home.
