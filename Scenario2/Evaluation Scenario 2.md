@@ -1,33 +1,51 @@
 # Evaluation Scenario 2
 
-```@example carcione
+```@example scenario2
 cd(@__DIR__)
-using SBMLToolkit, ModelingToolkit, EasyModelAnalysis, UnPack
+using OrdinaryDiffEq, ModelingToolkit, EasyModelAnalysis, SBML, SBMLToolkit, UnPack, Plots
 
-xmlfile = "../assets/Carcione2020.xml"
+function sub_cont_ev(ev, rules)
+    ModelingToolkit.SymbolicContinuousCallback(substitute(ev.eqs, rules),
+                                               substitute(ev.affect, rules))
+end
+fn = "Giordano2020.xml"
 
-SBMLToolkit.checksupport_file(xmlfile)
-mdl = readSBML(xmlfile, doc -> begin
-                   set_level_and_version(3, 2)(doc)
-                   convert_simplify_math(doc)
-               end)
+myread(fn) = readSBML(fn, doc -> begin
+                          set_level_and_version(3, 2)(doc)
+                          convert_promotelocals_expandfuns(doc)
+                      end)
 
-rs = ReactionSystem(mdl)  # If you want to create a reaction system
-odesys = convert(ODESystem, rs)  # Alternatively: ODESystem(mdl)
+m = myread(fn)
+rn = ReactionSystem(m)
+sys = convert(ODESystem, rn)
+eqs = equations(sys)
+defs_ = ModelingToolkit.defaults(sys)
+defs = deepcopy(defs_)
+evs = ModelingToolkit.get_continuous_events(sys)
+
+# these are the constant=false params 
+params_to_sub = unique(ModelingToolkit.lhss(vcat(map(x -> x.affect, evs)...)))
+
+@unpack alpha, epsilon, gamma, beta, delta, mu, nu, lambda, rho, kappa, xi, sigma, zeta, eta = sys
+ps = [alpha, epsilon, gamma, beta, delta, mu, nu, lambda, rho, kappa, xi, sigma, zeta, eta]
+
+subd = Dict(params_to_sub .=> ps)
+newevs = map(x -> sub_cont_ev(x, subd), evs)
+
+sys2 = ODESystem(eqs, ModelingToolkit.get_iv(sys), states(sys), parameters(sys);
+                 continuous_events = newevs, defaults = defs, name = nameof(sys))
+sys2 = structural_simplify(sys2)
 ```
 
 ```@example carcione
-sys = structural_simplify(odesys)
+prob = ODEProblem(sys2, [], (0.0, 1000.0))
+sol = solve(prob, Tsit5())
+
+@unpack Infected = sys2
+plot(sol, idxs = Infected)
 ```
 
-```@example carcione
-@unpack Infected, Exposed, Deceased, Recovered, Total_population, Susceptible = sys
-@unpack alpha, epsilon, gamma, mu, beta, City = sys
-tspan = (0.0, 1.0)
-prob = ODEProblem(odesys, [], tspan, [])
-sol = solve(prob, Rodas5())
-plot(sol, idxs = Deceased)
-```
+### Sensitivity Analysis
 
 ```@example carcione
 pbounds = [
