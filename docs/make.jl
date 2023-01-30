@@ -9,9 +9,9 @@ using Documenter, EasyModelAnalysis
 ENV["GKSwstype"] = "100"
 using Plots
 
-using Pkg
-Pkg.add(url = "https://github.com/AlgebraicJulia/ASKEM-demos/", rev = "pas/hackathon",
-        subdir = "lib")
+#using Pkg
+#Pkg.add(url = "https://github.com/AlgebraicJulia/ASKEM-demos/", rev = "pas/hackathon",
+#        subdir = "lib")
 
 mathengine = MathJax3(Dict(:loader => Dict("load" => ["[tex]/require", "[tex]/mathtools"]),
                            :tex => Dict("inlineMath" => [["\$", "\$"], ["\\(", "\\)"]],
@@ -42,8 +42,8 @@ makedocs(sitename = "DARPA-ASKEM Evalution",
          pages = [
              "DARPA-ASKEM Evalution" => "index.md",
              "Scenario1/Evalution_Scenario_1.md",
-             "Scenario2/Evalution_Scenario_2.md",
-             "Scenario3/Evalution_Scenario_3.md",
+             #"Scenario2/Evalution_Scenario_2.md",
+             #"Scenario3/Evalution_Scenario_3.md",
          ])
 
-deploydocs(repo = "github.com/SciML/EasyModelAnalysis.jl")
+deploydocs(repo = "github.com/ChrisRackauckas/ASKEM_Evaluation_Staging.jl")
