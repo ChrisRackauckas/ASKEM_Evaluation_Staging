@@ -162,4 +162,8 @@ plot(plt1, plt2, plt3, plt4, plt5, size = (1000, 500))
 
 > If the data you’ve found supports this, compare the situation for a country with significant multi-generational contact beyond two generations (as indicated by multiple contact matrix diagonal bandings), and for a country without. 
 
+Do simulations with India vs Belgium
+
 > If the data supports this, try implementing interventions like: (1) School closures (2) Social distancing at work and other locations, but not at home.
+
+Missing data right now
