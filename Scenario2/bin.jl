@@ -206,7 +206,8 @@ sysv = eval(quote
 prob = ODEProblem(sysv, [], (0, 100))
 sol = solve(prob, Tsit5())
 plot(sol)
-plot(sol, idxs=og_states)
+plot(sol, idxs=[og_states; Vaccinated])
+
 # @unpack Infected, Extinct = sys
 
 # pbounds = [
