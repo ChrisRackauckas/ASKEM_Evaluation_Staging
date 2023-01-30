@@ -37,11 +37,10 @@ makedocs(sitename = "DARPA-ASKEM Evalution",
          ],
          format = Documenter.HTML(analytics = "UA-90474609-3",
                                   assets = ["assets/favicon.ico"],
-                                  canonical = "https://docs.sciml.ai/EasyModelAnalysis/stable/",
                                   mathengine = mathengine),
          pages = [
              "DARPA-ASKEM Evalution" => "index.md",
-             "Scenario1/Evalution_Scenario_1.md",
+             "Scenario1/Evaluation_Scenario_1.md",
              #"Scenario2/Evalution_Scenario_2.md",
              #"Scenario3/Evalution_Scenario_3.md",
          ])
