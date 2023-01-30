@@ -42,7 +42,7 @@ ssys = structural_simplify(sys2)
 
 #### Unit Test 1
 
-> Set the initial values and parameters, as described in the Supplementary Methods section of the publication (pg. 9 of the pdf): 
+> Set the initial values and parameters, as described in the Supplementary Methods section of the publication (pg. 9 of the pdf):
 
 > Initial Values: I = 200/60e6, D = 20/60e6, A = 1/60e6, R = 2/60e6, T = 0, H = 0, E = 0; S = 1 – I – D – A – R – T – H – E. Let total population = 60e6.
 
@@ -91,15 +91,18 @@ plot(solt1.t, solt1[sum(idart)]; label = "IDART percent")
 xmax, xmaxval = get_max_t(prob_test1, sum(idart))
 
 @test isapprox(xmax, 47; atol = 4)
-@test isapprox(xmaxval, 0.002;atol=0.01)
-
+@test isapprox(xmaxval, 0.002; atol = 0.01)
 ```
+
 ### Sensitivity Analysis
 
-> The difference between 1.b.i and 1.b.ii are changes in some parameter values over time. Describe the difference in outcomes between b.i and b.ii. Perform a sensitivity analysis to understand the sensitivity of the model to parameter variations and determine which parameter(s) were most responsible for the change in outcomes. 
+> The difference between 1.b.i and 1.b.ii are changes in some parameter values over time. Describe the difference in outcomes between b.i and b.ii. Perform a sensitivity analysis to understand the sensitivity of the model to parameter variations and determine which parameter(s) were most responsible for the change in outcomes.
 
 ```@example scenario2
-pbounds = [param => [0.5*ModelingToolkit.defaults(sys)[param],2*ModelingToolkit.defaults(sys)[param]] for param in parameters(sys2)]
+pbounds = [param => [
+               0.5 * ModelingToolkit.defaults(sys)[param],
+               2 * ModelingToolkit.defaults(sys)[param],
+           ] for param in parameters(sys2)]
 sensres = get_sensitivity(prob, 100.0, Infected, pbounds; samples = 200)
 ```
 
@@ -112,12 +115,18 @@ create_sensitivity_plot(prob, 100.0, Infected, pbounds; samples = 200)
 > Now return to the situation in b.i (constant parameters that don’t change over time). Let’s say we want to increase testing, diagnostics, and contact tracing efforts (implemented by increasing the detection parameters ε and θ). Assume that θ >= 2* ε, because a symptomatic person is more likely to be tested. What minimum constant values do these parameters need to be over the course of a 100-day simulation, to ensure that the total infected population (sum over all the infected states I, D, A, R, T) never rises above 1/3 of the total population?
 
 ```@example scenario2
-threshold_observable = (Infected + Diagnosed + Ailing + Recognized + Threatened) / sum(states(sys))
+threshold_observable = (Infected + Diagnosed + Ailing + Recognized + Threatened) /
+                       sum(states(sys))
 cost = -(eta + theta)
-EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, threshold_observable, 0.33, 
-                                             cost, [eta,theta], [0.0,0.0], 
-                                             3 .* [ModelingToolkit.defaults(sys)[eta], ModelingToolkit.defaults(sys)[theta]]; 
-                                             maxtime=60)
+EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, threshold_observable,
+                                                               0.33,
+                                                               cost, [eta, theta],
+                                                               [0.0, 0.0],
+                                                               3 .* [
+                                                                   ModelingToolkit.defaults(sys)[eta],
+                                                                   ModelingToolkit.defaults(sys)[theta],
+                                                               ];
+                                                               maxtime = 60)
 ```
 
 ## Question 2
@@ -257,11 +266,18 @@ xmax, xmaxval = get_max_t(probv, sum(idart))
 
 ```@example scenario2
 intervention_parameters = [theta] # Need to figure out what these should be
-[p => EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, threshold_observable, 0.33, 
-                                             p - ModelingToolkit.defaults(sys)[p], [p], [0.0], 
-                                             3 .* [ModelingToolkit.defaults(sys)[p]],
-                                             (30.0,100.0); 
-                                             maxtime=60) for p in intervention_parameters]
+[p => EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob,
+                                                                     threshold_observable,
+                                                                     0.33,
+                                                                     p -
+                                                                     ModelingToolkit.defaults(sys)[p],
+                                                                     [p], [0.0],
+                                                                     3 .* [
+                                                                         ModelingToolkit.defaults(sys)[p],
+                                                                     ],
+                                                                     (30.0, 100.0);
+                                                                     maxtime = 60)
+ for p in intervention_parameters]
 ```
 
 ### b.ii
@@ -274,9 +290,14 @@ R0 = Infected # how is R0 defined from the states?
 
 ```@example scenario2
 intervention_parameters = [theta] # Need to figure out what these should be
-[p => EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, R0, 1.0, 
-                                             p - ModelingToolkit.defaults(sys)[p], [p], [0.0], 
-                                             3 .* [ModelingToolkit.defaults(sys)[p]],
-                                             (30.0,100.0); 
-                                             maxtime=60) for p in intervention_parameters]
+[p => EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, R0, 1.0,
+                                                                     p -
+                                                                     ModelingToolkit.defaults(sys)[p],
+                                                                     [p], [0.0],
+                                                                     3 .* [
+                                                                         ModelingToolkit.defaults(sys)[p],
+                                                                     ],
+                                                                     (30.0, 100.0);
+                                                                     maxtime = 60)
+ for p in intervention_parameters]
 ```

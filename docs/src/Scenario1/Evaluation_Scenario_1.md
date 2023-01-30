@@ -11,7 +11,7 @@ tf = 600
 β = R0 * γ
 k = 1000
 
-function make_statified_model(pops; pop_assumption = (stratum, pop)->1)
+function make_statified_model(pops; pop_assumption = (stratum, pop) -> 1)
     @variables t S(t) I(t) R(t)
     D = Differential(t)
     n_stratify = length(pops)
@@ -20,7 +20,7 @@ function make_statified_model(pops; pop_assumption = (stratum, pop)->1)
     Is = map(v -> v(t), variables(:I, 1:n_stratify, T = FnType))
     Rs = map(v -> v(t), variables(:R, 1:n_stratify, T = FnType))
     C = map(toparam, variables(:C, 1:n_stratify, 1:n_stratify))
-    uniform_contact_matrix = fill(1/n_stratify, (n_stratify, n_stratify))
+    uniform_contact_matrix = fill(1 / n_stratify, (n_stratify, n_stratify))
     defs = Dict()
 
     for (i, nn) in enumerate(pops)
@@ -35,11 +35,11 @@ function make_statified_model(pops; pop_assumption = (stratum, pop)->1)
         defs[C[i]] = uniform_contact_matrix[i]
     end
     eqs = [D.(Ss) .~ -β ./ Ns .* Ss .* (C * Is)
-        D.(Is) .~ β ./ Ns .* Ss .* (C * Is) .- γ .* Is
-        @. D(Rs) ~ γ * Is
-        S ~ sum(Ss)
-        I ~ sum(Is)
-        R ~ sum(Rs)]
+           D.(Is) .~ β ./ Ns .* Ss .* (C * Is) .- γ .* Is
+           @. D(Rs) ~ γ * Is
+           S ~ sum(Ss)
+           I ~ sum(Is)
+           R ~ sum(Rs)]
     @named model = ODESystem(eqs; defaults = defs)
     sys = structural_simplify(model)
     (C, sys)
@@ -170,28 +170,31 @@ xf_home2 = XLSX.readxlsx("data/MUestimates_home_2.xlsx")
 xf_other1 = XLSX.readxlsx("data/MUestimates_other_locations_1.xlsx")
 xf_other2 = XLSX.readxlsx("data/MUestimates_other_locations_2.xlsx")
 
-xfs1 = (:all => xf_all_locations1, :work => xf_work1, :school => xf_school1, :home => xf_home1, :other => xf_other1)
-xfs2 = (:all => xf_all_locations2, :work => xf_work2, :school => xf_school2, :home => xf_home2, :other => xf_other2)
+xfs1 = (:all => xf_all_locations1, :work => xf_work1, :school => xf_school1,
+        :home => xf_home1, :other => xf_other1)
+xfs2 = (:all => xf_all_locations2, :work => xf_work2, :school => xf_school2,
+        :home => xf_home2, :other => xf_other2)
 
-to_cm(sheet) = Float64[sheet[i,j] for i = 2:17, j = 1:16]
+to_cm(sheet) = Float64[sheet[i, j] for i in 2:17, j in 1:16]
 
 # Load Belgium contact matrix
 cm_belg = to_cm(xf_all_locations1["Belgium"])
 
 # Load Belgium population distribution
-pop_belg = values(CSV.read("data/2022_ Belgium_population_by_age.csv", DataFrame, header=3)[1, 2:17])
+pop_belg = values(CSV.read("data/2022_ Belgium_population_by_age.csv", DataFrame,
+                           header = 3)[1, 2:17])
 
 # Set up model
 # Per MITRE: Assume that the same fixed fraction of the population in each stratum is initially infected. Here: 0.01%
-pop_assumption(_, nn) = nn*0.0001
+pop_assumption(_, nn) = nn * 0.0001
 (C, sys_belg) = make_statified_model(pop_belg; pop_assumption)
 
 prob = ODEProblem(sys_belg, [], (0, tf), vec(C .=> cm_belg))
 sol = solve(prob)
-plot(sol, leg=:topright)
+plot(sol, leg = :topright)
 ```
 
-> If the data you’ve found supports this, compare the situation for a country with significant multi-generational contact beyond two generations (as indicated by multiple contact matrix diagonal bandings), and for a country without. 
+> If the data you’ve found supports this, compare the situation for a country with significant multi-generational contact beyond two generations (as indicated by multiple contact matrix diagonal bandings), and for a country without.
 
 ```@example scenario1
 # Load India contact matrix
@@ -204,7 +207,7 @@ pop_india = values(CSV.read("data/2016_india_population_by_age.csv", DataFrame)[
 (C, sys_india) = make_statified_model(pop_india; pop_assumption)
 prob = ODEProblem(sys_india, [], (0, tf), vec(C .=> cm_india))
 sol = solve(prob)
-plot(sol, leg=:topright)
+plot(sol, leg = :topright)
 ```
 
 > If the data supports this, try implementing interventions like: (1) School closures (2) Social distancing at work and other locations, but not at home.
@@ -214,12 +217,14 @@ plot(sol, leg=:topright)
 > Prem et al Supplementary info, page 20
 
 ```@example scenario1
-cm_school(xfs) = to_cm(xfs[:home][country]) + to_cm(xfs[:work][country]) + to_cm(xfs[:other][country]) # no school
+function cm_school(xfs)
+    to_cm(xfs[:home][country]) + to_cm(xfs[:work][country]) + to_cm(xfs[:other][country])
+end # no school
 
 cm_belgium_school_closure = cm_school(xfs1, "Belgium")
 prob = ODEProblem(sys, [], (0, tf), vec(C .=> cm_belgium_school_closure))
 sol = solve(prob)
-plot(sol, leg=:topright)
+plot(sol, leg = :topright)
 ```
 
 > (2) Social distancing at work and other locations, but not at home.
@@ -227,10 +232,13 @@ plot(sol, leg=:topright)
 > Prem et al sets social distancing to reduce contacts by half
 
 ```@example scenario1
-cm_social_dist(xfs) = to_cm(xfs[:home][country]) + 0.5*to_cm(xfs[:work][country]) + 0.5*to_cm(xfs[:school][country]) + 0.5*to_cm(xfs[:other][country]) 
+function cm_social_dist(xfs)
+    to_cm(xfs[:home][country]) + 0.5 * to_cm(xfs[:work][country]) +
+    0.5 * to_cm(xfs[:school][country]) + 0.5 * to_cm(xfs[:other][country])
+end
 
 cm_belgium_social_dist = cm_social_dist(xfs1, "Belgium")
 prob = ODEProblem(sys, [], (0, tf), vec(C .=> cm_belgium_social_dist))
 sol = solve(prob)
-plot(sol, leg=:topright)
+plot(sol, leg = :topright)
 ```
