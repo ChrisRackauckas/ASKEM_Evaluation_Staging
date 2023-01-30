@@ -82,8 +82,9 @@ create_sensitivity_plot(prob, 100.0, Infected, pbounds; samples = 200)
 > Now return to the situation in b.i (constant parameters that don’t change over time). Let’s say we want to increase testing, diagnostics, and contact tracing efforts (implemented by increasing the detection parameters ε and θ). Assume that θ >= 2* ε, because a symptomatic person is more likely to be tested. What minimum constant values do these parameters need to be over the course of a 100-day simulation, to ensure that the total infected population (sum over all the infected states I, D, A, R, T) never rises above 1/3 of the total population?
 
 ```@example scenario2
-cost = eta + theta
-EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, Infected / sum(states(sys)), 0.33, 
+threshold_observable = (Infected + Diagnosed + Ailing + Recognized + Threatened) / sum(states(sys))
+cost = -(eta + theta)
+EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, threshold_observable, 0.33, 
                                              cost, [eta,theta], [0.0,0.0], 
                                              3 .* [ModelingToolkit.defaults(sys)[eta], ModelingToolkit.defaults(sys)[theta]]; 
                                              maxtime=60)
