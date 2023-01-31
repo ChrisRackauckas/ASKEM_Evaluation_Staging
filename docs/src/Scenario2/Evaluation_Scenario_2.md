@@ -128,7 +128,7 @@ pbounds = [param => [
                0.5 * ModelingToolkit.defaults(sys)[param],
                2 * ModelingToolkit.defaults(sys)[param],
            ] for param in parameters(sys2)]
-sensres = get_sensitivity(prob, 100.0, Infected, pbounds; samples = 1000)
+sensres = get_sensitivity(probne, 100.0, Infected, pbounds; samples = 1000)
 sensres_vec = collect(sensres)
 sort(filter(x->endswith(string(x[1]), "_first_order"), sensres_vec), by=x->abs(x[2]), rev = true)
 ```
@@ -145,7 +145,7 @@ sort(filter(x->endswith(string(x[1]), "_total_order"), sensres_vec), by=x->abs(x
 create_sensitivity_plot(sensres, pbounds)
 ```
 
-### Mininmum Parameter Threshold
+### Minimum Parameter Threshold
 
 > Now return to the situation in b.i (constant parameters that don’t change over
 > time). Let’s say we want to increase testing, diagnostics, and contact tracing
