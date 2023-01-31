@@ -6,7 +6,6 @@
 
 ```@example scenario2
 using EasyModelAnalysis, SBML, SBMLToolkit, UnPack, Test
-import Plots
 
 fn = "Giordano2020.xml"
 
@@ -49,13 +48,13 @@ ssys = structural_simplify(sys2)
 
 > Simulate for 100 days, and determine the day and level of peak total infections (sum over all the infected states I, D, A, R, T). Expected output: The peak should occur around day 47, when ~60% of the population is infected.
 
-This unit test requires deletion of the events in the SBML (or elsewhere). We deleted in the SBML.
+Note that this unit test requires no continuous events (discrete updates) from
+the SBML model only the pure dynamics model is needed, so we drop the continuous
+events here.
 
 ```@example scenario2
-fn_noevs = joinpath("..", "docs", "src", "Scenario2", "Giordano2020_noevs.xml")
-mne = myread(fn_noevs)
-rnne = ReactionSystem(mne)
-sysne = convert(ODESystem, rnne)
+sysne = ODESystem(eqs2, ModelingToolkit.get_iv(sys), states(sys), parameters(sys);
+                 defaults = defs, name = nameof(sys))
 ssysne = structural_simplify(sysne)
 probne = ODEProblem(ssysne, [], (0.0, 100.0))
 ITALY_POPULATION = 60e6
