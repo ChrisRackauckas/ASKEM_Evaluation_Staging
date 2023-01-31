@@ -147,7 +147,7 @@ pbounds = [param => [
                0.5 * ModelingToolkit.defaults(sys)[param],
                2 * ModelingToolkit.defaults(sys)[param],
            ] for param in parameters(sys2)]
-sensres = get_sensitivity(prob, 100.0, Infected, pbounds; samples = 1000)
+sensres = get_sensitivity(probne, 100.0, Infected, pbounds; samples = 1000)
 sensres_vec = collect(sensres)
 sort(filter(x->endswith(string(x[1]), "_first_order"), sensres_vec), by=x->abs(x[2]), rev = true)
 ```
@@ -164,11 +164,18 @@ sort(filter(x->endswith(string(x[1]), "_total_order"), sensres_vec), by=x->abs(x
 create_sensitivity_plot(sensres, pbounds)
 ```
 
-### Mininmum Parameter Threshold
+### Minimum Parameter Threshold
 
-> Now return to the situation in b.i (constant parameters that don’t change over time). Let’s say we want to increase testing, diagnostics, and contact tracing efforts (implemented by increasing the detection parameters ε and θ). Assume that θ >= 2* ε, because a symptomatic person is more likely to be tested. What minimum constant values do these parameters need to be over the course of a 100-day simulation, to ensure that the total infected population (sum over all the infected states I, D, A, R, T) never rises above 1/3 of the total population?
+> Now return to the situation in b.i (constant parameters that don’t change over
+> time). Let’s say we want to increase testing, diagnostics, and contact tracing
+> efforts (implemented by increasing the detection parameters ε and θ). Assume
+> that θ >= 2* ε, because a symptomatic person is more likely to be tested. What
+> minimum constant values do these parameters need to be over the course of a
+> 100-day simulation, to ensure that the total infected population (sum over all
+> the infected states I, D, A, R, T) never rises above 1/3 of the total
+> population?
 
-This scenario demonstrates the 
+This scenario demonstrates the
 [lazily defined observables](https://sciml.github.io/EasyModelAnalysis.jl/dev/getting_started/#Lazily-Defining-Observables) 
 functionality that persists throughout our simulation and analysis libraries. When one solves an equation with ModelingToolkit
 symbolic values, `sol[x]` gives the solution with respect to `x` by name. While that improves code legibility, `sol[x+y]` is
@@ -186,7 +193,8 @@ of these parameters for further information.
 threshold_observable = (Infected + Diagnosed + Ailing + Recognized + Threatened) /
                        sum(states(sys))
 cost = -(eta + theta)
-EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, threshold_observable,
+ineq_cons = [2 * eta - theta]
+opt_p, sol_opt_p, ret = optimal_parameter_threshold(probne, threshold_observable,
                                                                0.33,
                                                                cost, [eta, theta],
                                                                [0.0, 0.0],
@@ -194,7 +202,13 @@ EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, threshold_o
                                                                    ModelingToolkit.defaults(sys)[eta],
                                                                    ModelingToolkit.defaults(sys)[theta],
                                                                ];
-                                                               maxtime = 60)
+                                                               maxtime = 60,
+                                                               ineq_cons);
+opt_p
+```
+
+```@example scenario2
+plot(sol_opt_p, idxs=[threshold_observable], lab="total infected", leg=:topright)
 ```
 
 ## Question 2
