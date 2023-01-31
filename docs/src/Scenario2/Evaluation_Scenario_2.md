@@ -66,7 +66,7 @@ results of the unit test 1. A demonstration of this is as follows:
 
 ```@example scenario2
 sysne = ODESystem(eqs2, ModelingToolkit.get_iv(sys), states(sys), parameters(sys);
-                 defaults = defs, name = nameof(sys))
+                  defaults = defs, name = nameof(sys))
 ssysne = structural_simplify(sysne)
 probne = ODEProblem(ssysne, [], (0.0, 100.0))
 solne = solve(probne, Tsit5())
@@ -178,7 +178,7 @@ parameter bound data which would make this a one line analysis.
 A utility was added (https://github.com/SciML/EasyModelAnalysis.jl/pull/134) to make it so the sensitivity values did not need to
 be recreated for the plotting process. This was just a minor performance and "niceity" improvement. Polish.
 
-The sensitivity analysis needed 1000 samples, we reduced it to 200 due to memory limitations of our documentation building 
+The sensitivity analysis needed 1000 samples, we reduced it to 200 due to memory limitations of our documentation building
 compute server.
 
 ```@example scenario2
@@ -188,15 +188,18 @@ pbounds = [param => [
            ] for param in parameters(sys2)]
 sensres = get_sensitivity(probne, 100.0, Infected, pbounds; samples = 200)
 sensres_vec = collect(sensres)
-sort(filter(x->endswith(string(x[1]), "_first_order"), sensres_vec), by=x->abs(x[2]), rev = true)
+sort(filter(x -> endswith(string(x[1]), "_first_order"), sensres_vec), by = x -> abs(x[2]),
+     rev = true)
 ```
 
 ```@example scenario2
-sort(filter(x->endswith(string(x[1]), "_second_order"), sensres_vec), by=x->abs(x[2]), rev = true)
+sort(filter(x -> endswith(string(x[1]), "_second_order"), sensres_vec), by = x -> abs(x[2]),
+     rev = true)
 ```
 
 ```@example scenario2
-sort(filter(x->endswith(string(x[1]), "_total_order"), sensres_vec), by=x->abs(x[2]), rev = true)
+sort(filter(x -> endswith(string(x[1]), "_total_order"), sensres_vec), by = x -> abs(x[2]),
+     rev = true)
 ```
 
 ```@example scenario2
@@ -215,7 +218,7 @@ create_sensitivity_plot(sensres, pbounds)
 > population?
 
 This scenario demonstrates the
-[lazily defined observables](https://sciml.github.io/EasyModelAnalysis.jl/dev/getting_started/#Lazily-Defining-Observables) 
+[lazily defined observables](https://sciml.github.io/EasyModelAnalysis.jl/dev/getting_started/#Lazily-Defining-Observables)
 functionality that persists throughout our simulation and analysis libraries. When one solves an equation with ModelingToolkit
 symbolic values, `sol[x]` gives the solution with respect to `x` by name. While that improves code legibility, `sol[x+y]` is
 also allowed, and will automatically generate the solution of `x(t) + y(t)` on demand. Since this functionality is directly
@@ -234,20 +237,20 @@ threshold_observable = (Infected + Diagnosed + Ailing + Recognized + Threatened)
 cost = -(eta + theta)
 ineq_cons = [2 * eta - theta]
 opt_p, sol_opt_p, ret = optimal_parameter_threshold(probne, threshold_observable,
-                                                               0.33,
-                                                               cost, [eta, theta],
-                                                               [0.0, 0.0],
-                                                               3 .* [
-                                                                   ModelingToolkit.defaults(sys)[eta],
-                                                                   ModelingToolkit.defaults(sys)[theta],
-                                                               ];
-                                                               maxtime = 60,
-                                                               ineq_cons);
+                                                    0.33,
+                                                    cost, [eta, theta],
+                                                    [0.0, 0.0],
+                                                    3 .* [
+                                                        ModelingToolkit.defaults(sys)[eta],
+                                                        ModelingToolkit.defaults(sys)[theta],
+                                                    ];
+                                                    maxtime = 60,
+                                                    ineq_cons);
 opt_p
 ```
 
 ```@example scenario2
-plot(sol_opt_p, idxs=[threshold_observable], lab="total infected", leg=:topright)
+plot(sol_opt_p, idxs = [threshold_observable], lab = "total infected", leg = :topright)
 ```
 
 ## Question 2
@@ -437,22 +440,24 @@ This example revealed a typo in our function (https://github.com/SciML/EasyModel
 ```@example scenario2
 threshold_observable = (Infected + Diagnosed + Ailing + Recognized + Threatened) /
                        sum(states(sysv))
-plot(solv2, idxs=[threshold_observable], lab="total infected")
-hline!([1/3], lab="limit")
+plot(solv2, idxs = [threshold_observable], lab = "total infected")
+hline!([1 / 3], lab = "limit")
 ```
 
 ```@example scenario2
 intervention_p = phi # Need to figure out what these should be
 cost = intervention_p - defs_v2[intervention_p]
 opt_p, solv2_s, ret = optimal_parameter_intervention_for_threshold(probv2,
-                                                 threshold_observable,
-                                                 0.33,
-                                                 cost,
-                                                 [intervention_p], [0.0], [1.0],
-                                                 (30.0, 100.0);
-                                                 maxtime = 10);
+                                                                   threshold_observable,
+                                                                   0.33,
+                                                                   cost,
+                                                                   [intervention_p], [0.0],
+                                                                   [1.0],
+                                                                   (30.0, 100.0);
+                                                                   maxtime = 10);
 opt_p
 ```
+
 Note that the optimization solution is trivial, i.e. there's no intervention at
 all. This is expected because the model without any intervention would already
 have less than 1/3 of the population infected.
@@ -484,15 +489,13 @@ as b.i.
 ```@example scenario2
 D = 20
 R0 = sysv.alpha * sysv.Susceptible * D # double check
-plot(solv2, idxs=[R0])
+plot(solv2, idxs = [R0])
 ```
 
 ```@example scenario2
-intervention_parameters = [
-    sysv.theta => (2 * defs_v2[sysv.eta], 1) # 𝜃 >= 2 * 𝜀
-    sysv.eta => (0, defs_v2[sysv.theta] / 2)
-    sysv.phi => (0, 1)
-]
+intervention_parameters = [sysv.theta => (2 * defs_v2[sysv.eta], 1) # 𝜃 >= 2 * 𝜀
+                           sysv.eta => (0, defs_v2[sysv.theta] / 2)
+                           sysv.phi => (0, 1)]
 opt_results = map(intervention_parameters) do (intervention_p, bounds)
     cost = intervention_p - defs_v2[intervention_p]
     optimal_parameter_intervention_for_reach(probv2,
@@ -501,7 +504,7 @@ opt_results = map(intervention_parameters) do (intervention_p, bounds)
                                              cost,
                                              [intervention_p], [bounds[1]], [bounds[2]],
                                              (30.0, 100.0);
-                                             maxtime = 10);
+                                             maxtime = 10)
 end;
 map(first, opt_results)
 ```
@@ -509,9 +512,9 @@ map(first, opt_results)
 ```@example scenario2
 plts = map(opt_results) do opt_result
     title = only(collect(opt_result[1]))
-    title = title[1] => round(title[2], sigdigits=3)
-    plot(opt_result[2][2]; idxs=[R0], lab = "R0", title)
-    hline!([1], lab="limit")
+    title = title[1] => round(title[2], sigdigits = 3)
+    plot(opt_result[2][2]; idxs = [R0], lab = "R0", title)
+    hline!([1], lab = "limit")
 end
 plot(plts...)
 ```
