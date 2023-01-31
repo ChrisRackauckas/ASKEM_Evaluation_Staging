@@ -226,7 +226,7 @@ plot(sol, leg = :topright)
 > Prem et al sets social distancing to reduce contacts by half
 
 ```@example scenario1
-function cm_social_dist(xfs)
+function cm_social_dist(xfs, country)
     to_cm(xfs[:home][country]) + 0.5 * to_cm(xfs[:work][country]) +
     0.5 * to_cm(xfs[:school][country]) + 0.5 * to_cm(xfs[:other][country])
 end
