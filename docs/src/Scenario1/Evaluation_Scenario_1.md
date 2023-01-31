@@ -124,16 +124,8 @@ plot(plt1, plt2, plt3, plt4, plt5, size = (1000, 500))
 > Repeat 1.a for an older-skewing population: `N_young = 1k, N_middle = 2k, N_old = 3k`
 
 ```@example scenario1
-ps = Pair[]
-pop = (1k, 2k, 3k)
-for i in 1:n_stratify
-    nn = pop[i]
-    push!(ps, Ns[i] => nn)
-    push!(ps, Ss[i] => nn - 1)
-    push!(ps, Is[i] => 1)
-    push!(ps, Rs[i] => 0)
-end
-prob = ODEProblem(sys, [], (0, tf), ps)
+(C, sys) = make_statified_model((1k, 2k, 3k))
+prob = ODEProblem(sys, [], (0, tf))
 sol = solve(prob)
 plt1 = plot(sol, leg = :topright, title = "i")
 
