@@ -15,64 +15,74 @@ which we will use later.
 using EasyModelAnalysis, LinearAlgebra
 using EasyModelAnalysis.ModelingToolkit: toparam
 using EasyModelAnalysis.ModelingToolkit.Symbolics: FnType, variables
-using XLSX, CSV, DataFrames
+using XLSX, CSV, DataFrames, Plots
+using Catlab, Catlab.CategoricalAlgebra, Catlab.Programs, AlgebraicPetri, AlgebraicPetri.TypedPetri
 ```
 
 ## Stratified SIR
 
 > Scenario Ask: In order to consider more nuanced interventions, we would like for models to account for different age groups and their contact dynamics. Start with a basic SIR model without vital dynamics, and stratify it according to the following questions.
 
-We begin by creating a basic function that manually creates a stratified SIR model given a list of population buckets. 
+We begin by creating a basic function that manually creates a stratified SIR model given a list of population buckets.
 
 ```@example scenario1
 tf = 600
 const k = 1000
-@parameters γ=1 / 14 R0=5
-β = R0 * γ
+const γ = 1/14
+const R₀ = 5
+const β = R₀ * γ
 
 """
-    make_stratified_model(pops; pop_assumption)
+    make_stratified_model(pops, contactmat; infectedfrac = nothing)
 
-Given a list of population buckets `pops` (of length `n`), manually create a stratified SIR model with full interaction incidence. The SIR parameters
-γ and R0 (and thus β) are inherited from global scope. The function returns
-a symbolic handle to the contact matrix `C` as well as a reference to the
-system of differential equations that can be used for futher simulations.
+Given a list of population buckets `pops` (of length `n`), create a stratified SIR model with interaction
+incidence given by `contactmat`. The SIR parameters γ and R0 (and thus β) are inherited from global scope.
+Returns the system of differential equations that can be used for futher simulations.
 
-The optional keyword argument `pop_assumption` allows specifying an assumption
-on the intial infected distribution. If not passed, one individual is assumed
-infected in each age bracket.
+The optional keyword argument `infectedfrac` specifies the fraction of each group that should be
+considered infected initially.
 """
-function make_statified_model(pops; pop_assumption = (stratum, pop) -> 1)
-    @variables t S(t) I(t) R(t)
-    D = Differential(t)
-    n_stratify = length(pops)
-    Ns = map(toparam, variables(:N, 1:n_stratify))
-    Ss = map(v -> v(t), variables(:S, 1:n_stratify, T = FnType))
-    Is = map(v -> v(t), variables(:I, 1:n_stratify, T = FnType))
-    Rs = map(v -> v(t), variables(:R, 1:n_stratify, T = FnType))
-    C = map(toparam, variables(:C, 1:n_stratify, 1:n_stratify))
-    uniform_contact_matrix = fill(1 / n_stratify, (n_stratify, n_stratify))
-    defs = Dict()
+function make_stratified_model(pops, contactmat; infectedfrac = nothing)
+    types = LabelledPetriNet([:Pop],
+                             :infect=>((:Pop, :Pop)=>(:Pop, :Pop)),
+                             :disease=>(:Pop=>:Pop),
+                             :strata=>(:Pop=>:Pop))
+    sir_uwd = @relation () where (S::Pop, I::Pop, R::Pop) begin
+        infect(S,I,I,I)
+        disease(I,R)
+    end
+    sir_typed = oapply_typed(types, sir_uwd, [:inf, :rec])
+    totalpop = sum(pops)
+    n = length(pops)
+    I₀ = something(infectedfrac, n / totalpop)
+    sir_paramd = add_params(sir_typed, Dict{Symbol,Float64}(:S => 1 - I₀, :I => I₀, :R => 0),
+                            Dict(:inf => β, :rec => γ))
 
-    for (i, nn) in enumerate(pops)
-        defs[Ns[i]] = nn
-        Ii = pop_assumption(i, nn)
-        defs[Ss[i]] = nn - Ii
-        defs[Is[i]] = Ii
-        defs[Rs[i]] = 0
+    ages = pairwise_id_typed_petri(types, :Pop, :infect, [Symbol("A$i") for i = 1:n],
+                                   pops, contactmat ./ pops,
+                                   codom_net = codom(sir_paramd))
+    ages = add_reflexives(ages, repeat([[:disease]], n), types)
+    return typed_product(sir_paramd, ages)
+end
+
+"""
+    scenario1(pops, contactmat; infectedfrac, numinfected)
+
+Run a scenario 1 simulation with the given population buckets and contact matrix.
+`infectedfrac` has the same meaning as in `make_stratified_model`.
+`numinfected` allows specifying a fixed number of individuals in each age group
+considered infected initially.
+"""
+function scenario1(pops, mat; infectedfrac = nothing, numinfected = nothing)
+    sir_strat = flatten_labels(make_stratified_model(pops, mat; infectedfrac).dom)
+    sys = ODESystem(sir_strat)
+    U₀ = map(splat(*), sir_strat[:, :concentration])
+    if !isnothing(numinfected)
+        U₀[2:2:end] .= numinfected
     end
-    for i in eachindex(C)
-        defs[C[i]] = uniform_contact_matrix[i]
-    end
-    eqs = [D.(Ss) .~ -β ./ Ns .* Ss .* (C * Is)
-           D.(Is) .~ β ./ Ns .* Ss .* (C * Is) .- γ .* Is
-           @. D(Rs) ~ γ * Is
-           S ~ sum(Ss)
-           I ~ sum(Is)
-           R ~ sum(Rs)]
-    @named model = ODESystem(eqs; defaults = defs)
-    sys = structural_simplify(model)
-    (C, sys)
+    P = map(splat(*), sir_strat[:, :rate])
+    prob = ODEProblem(sys, U₀, (0, tf), P)
+    solve(prob)
 end
 ```
 
@@ -88,9 +98,7 @@ end
 N.B.: Uniform `1/n_strata` is the default in our model creation function above.
 
 ```@example scenario1
-(C, sys) = make_statified_model((2k, 2k, 2k))
-prob = ODEProblem(sys, [], (0, tf))
-sol = solve(prob)
+sol = scenario1([2k, 2k, 2k], fill(1/3, 3, 3), numinfected = 1)
 plt_a1 = plot(sol, leg = :topright)
 ```
 
@@ -111,8 +119,7 @@ contact_matrix = [0.4  0.05  0.1
 We now use this updated contact matrix to re-run the simulation.
 
 ```@example scenario1
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> contact_matrix))
-sol = solve(prob)
+sol = scenario1([2k, 2k, 2k], contact_matrix, numinfected = 1)
 plt_a2 = plot(sol, leg = :topright)
 ```
 
@@ -121,8 +128,7 @@ plt_a2 = plot(sol, leg = :topright)
 > of no contact between age groups.
 
 ```@example scenario1
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> Diagonal(contact_matrix)))
-sol = solve(prob)
+sol = scenario1([2k, 2k, 2k], Diagonal(contact_matrix), numinfected = 1)
 plt_a3 = plot(sol, leg = :topright)
 ```
 
@@ -131,8 +137,7 @@ plt_a3 = plot(sol, leg = :topright)
 
 ```@example scenario1
 uniform_matrix = fill(0.33, (3, 3))
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> 0.5 * uniform_matrix))
-sol = solve(prob)
+sol = scenario1([2k, 2k, 2k], 0.5 * uniform_matrix, numinfected = 1)
 plt_a4 = plot(sol, leg = :topright)
 ```
 
@@ -141,8 +146,7 @@ plt_a4 = plot(sol, leg = :topright)
 
 ```@example scenario1
 scaling = Diagonal([0.9, 0.8, 0.4])
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> scaling * uniform_matrix))
-sol = solve(prob)
+sol = scenario1([2k, 2k, 2k], scaling * uniform_matrix, numinfected = 1)
 plt_a5 = plot(sol, leg = :topright)
 ```
 
@@ -155,52 +159,42 @@ plot(plt_a1, plt_a2, plt_a3, plt_a4, plt_a5, size = (1000, 500))
 > Repeat 1.a for a younger-skewing population: `N_young = 3k, N_middle = 2k, N_old = 1k`
 
 ```@example scenario1
-(C, sys) = make_statified_model((3k, 2k, 1k))
-prob = ODEProblem(sys, [], (0, tf))
-sol = solve(prob)
+sol = scenario1([3k, 2k, 1k], fill(1/3, 3, 3), numinfected = 1)
 plt_b1 = plot(sol, leg = :topright, title = "i")
 
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> contact_matrix))
-sol = solve(prob)
+sol = scenario1([3k, 2k, 1k], contact_matrix, numinfected = 1)
 plt_b2 = plot(sol, leg = :topright, title = "ii")
 
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> Diagonal(contact_matrix)))
-sol = solve(prob)
+sol = scenario1([3k, 2k, 1k], Diagonal(contact_matrix), numinfected = 1)
 plt_b3 = plot(sol, leg = :topright, title = "iii")
 
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> 0.5 * uniform_matrix))
-sol = solve(prob)
+sol = scenario1([3k, 2k, 1k], 0.5 * uniform_matrix, numinfected = 1)
 plt_b4 = plot(sol, leg = :topright, title = "iv")
 
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> scaling * contact_matrix))
-sol = solve(prob)
+sol = scenario1([3k, 2k, 1k], scaling * uniform_matrix, numinfected = 1)
 plt_b5 = plot(sol, leg = :topright, title = "v")
+
 plot(plt_b1, plt_b2, plt_b3, plt_b4, plt_b5, size = (1000, 500))
 ```
 
 > Repeat 1.a for an older-skewing population: `N_young = 1k, N_middle = 2k, N_old = 3k`
 
 ```@example scenario1
-(C, sys) = make_statified_model((1k, 2k, 3k))
-prob = ODEProblem(sys, [], (0, tf))
-sol = solve(prob)
+sol = scenario1([1k, 2k, 3k], fill(1/3, 3, 3), numinfected = 1)
 plt_c1 = plot(sol, leg = :topright, title = "i")
 
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> contact_matrix))
-sol = solve(prob)
+sol = scenario1([1k, 2k, 3k], contact_matrix, numinfected = 1)
 plt_c2 = plot(sol, leg = :topright, title = "ii")
 
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> Diagonal(contact_matrix)))
-sol = solve(prob)
+sol = scenario1([1k, 2k, 3k], Diagonal(contact_matrix), numinfected = 1)
 plt_c3 = plot(sol, leg = :topright, title = "iii")
 
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> 0.5 * uniform_matrix))
-sol = solve(prob)
+sol = scenario1([1k, 2k, 3k], 0.5 * uniform_matrix, numinfected = 1)
 plt_c4 = plot(sol, leg = :topright, title = "iv")
 
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> scaling * uniform_matrix))
-sol = solve(prob)
+sol = scenario1([1k, 2k, 3k], scaling * uniform_matrix, numinfected = 1)
 plt_c5 = plot(sol, leg = :topright, title = "v")
+
 plot(plt_c1, plt_c2, plt_c3, plt_c4, plt_c5, size = (1000, 500))
 ```
 
@@ -260,27 +254,18 @@ cm_belg = to_cm(xf_all_locations1["Belgium"])
 heatmap(cm_belg, yflip=true)
 ```
 
-
-```@example scenario1
-heatmap(cm_belg)
-```
-
 Next we load the population distribution data.
 
 ```@example scenario1
-pop_belg = values(CSV.read("data/2022_ Belgium_population_by_age.csv", DataFrame,
-                           header = 3)[1, 2:17])
+pop_belg = collect(values(CSV.read("data/2022_ Belgium_population_by_age.csv", DataFrame,
+                           header = 3)[1, 2:17]))
 bar(1:length(pop_belg), collect(pop_belg), permute=(:x, :y), xlabel="Age (5 year buckets)", ylabel="Total # of people", leg=:none)
 ```
 
 ```@example scenario1
 # Set up model
 # Per MITRE: Assume that the same fixed fraction of the population in each stratum is initially infected. Here: 0.01%
-pop_assumption(_, nn) = nn * 0.0001
-(Cbelg, sys_belg) = make_statified_model(pop_belg; pop_assumption)
-
-prob = ODEProblem(sys_belg, [], (0, tf), vec(Cbelg .=> cm_belg))
-sol = solve(prob)
+sol = scenario1(pop_belg, cm_belg, infectedfrac = 0.0001)
 plot(sol, leg = :topright)
 ```
 
@@ -294,15 +279,13 @@ cm_india = to_cm(xf_all_locations1["India"])
 hm = heatmap(cm_india, yflip=true)
 
 # Load India population distribution
-pop_india = values(CSV.read("data/2016_india_population_by_age.csv", DataFrame)[1, 3:18])
+pop_india = collect(values(CSV.read("data/2016_india_population_by_age.csv", DataFrame)[1, 3:18]))
 bar_india = bar(1:length(pop_india), collect(pop_india), permute=(:x, :y), xlabel="Age (5 year buckets)", ylabel="Total # of people", leg=:none)
 plot(hm, bar_india)
 ```
 
 ```@example scenario1
-(Cindia, sys_india) = make_statified_model(pop_india; pop_assumption)
-prob = ODEProblem(sys_india, [], (0, tf), vec(Cindia .=> cm_india))
-sol = solve(prob)
+sol = scenario1(pop_india, cm_india, infectedfrac = 0.0001)
 plot(sol, leg = :topright)
 ```
 
@@ -318,8 +301,7 @@ function cm_school(xfs, country)
 end # no school
 
 cm_belgium_school_closure = cm_school(xfs1, "Belgium")
-prob = ODEProblem(sys_belg, [], (0, tf), vec(Cbelg .=> cm_belgium_school_closure))
-sol = solve(prob)
+sol = scenario1(pop_belg, cm_belgium_school_closure, infectedfrac = 0.0001)
 plot(sol, leg = :topright)
 ```
 
@@ -334,7 +316,6 @@ function cm_social_dist(xfs, country)
 end
 
 cm_belgium_social_dist = cm_social_dist(xfs1, "Belgium")
-prob = ODEProblem(sys_belg, [], (0, tf), vec(Cbelg .=> cm_belgium_social_dist))
-sol = solve(prob)
+sol = scenario1(pop_belg, cm_belgium_social_dist, infectedfrac = 0.0001)
 plot(sol, leg = :topright)
 ```
