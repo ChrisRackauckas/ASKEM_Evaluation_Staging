@@ -75,6 +75,12 @@ xmax, xmaxval = get_max_t(probne, sum(idart))
 
 @test isapprox(xmax, 47; atol = 0.5)
 @test isapprox(xmaxval, 0.6, atol = 0.01)
+
+solne = solve(probne, Tsit5())
+p = plot(solne, vars = idart)
+savefig(p, "no_events.png")
+p = plot(solne.t, sol[sum(idart)])
+savefig(p, "no_events_sum.png"
 ```
 
 #### Full Analysis of the Effect of Events
