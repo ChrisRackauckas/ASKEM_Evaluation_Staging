@@ -13,6 +13,9 @@ using Plots
 #Pkg.add(url = "https://github.com/AlgebraicJulia/ASKEM-demos/", rev = "pas/hackathon",
 #        subdir = "lib")
 
+using Pkg
+Pkg.add(url = "https://github.com/SciML/SBMLToolkit.jl", rev = "aj/askem")
+
 mathengine = MathJax3(Dict(:loader => Dict("load" => ["[tex]/require", "[tex]/mathtools"]),
                            :tex => Dict("inlineMath" => [["\$", "\$"], ["\\(", "\\)"]],
                                         "packages" => [
