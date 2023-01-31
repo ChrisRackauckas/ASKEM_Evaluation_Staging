@@ -87,7 +87,7 @@ p = plot(solne, vars = idart)
 ```
 
 ```@example scenario2
-p = plot(solne.t, sol[sum(idart)])
+p = plot(solne.t, solne[sum(idart)])
 ```
 
 #### Unit Test 2
@@ -151,12 +151,15 @@ parameter bound data which would make this a one line analysis.
 A utility was added (https://github.com/SciML/EasyModelAnalysis.jl/pull/134) to make it so the sensitivity values did not need to
 be recreated for the plotting process. This was just a minor performance and "niceity" improvement. Polish.
 
+The sensitivity analysis needed 1000 samples, we reduced it to 200 due to memory limitations of our documentation building 
+compute server.
+
 ```@example scenario2
 pbounds = [param => [
                0.5 * ModelingToolkit.defaults(sys)[param],
                2 * ModelingToolkit.defaults(sys)[param],
            ] for param in parameters(sys2)]
-sensres = get_sensitivity(probne, 100.0, Infected, pbounds; samples = 1000)
+sensres = get_sensitivity(probne, 100.0, Infected, pbounds; samples = 200)
 sensres_vec = collect(sensres)
 sort(filter(x->endswith(string(x[1]), "_first_order"), sensres_vec), by=x->abs(x[2]), rev = true)
 ```

@@ -26,7 +26,7 @@ mathengine = MathJax3(Dict(:loader => Dict("load" => ["[tex]/require", "[tex]/ma
                                             "require",
                                         ])))
 
-makedocs(sitename = "DARPA-ASKEM Evalution",
+makedocs(sitename = "DARPA-ASKEM Evaluation",
          authors = "Chris Rackauckas",
          modules = Module[EasyModelAnalysis],
          clean = true, doctest = false,
@@ -44,8 +44,8 @@ makedocs(sitename = "DARPA-ASKEM Evalution",
          pages = [
              "DARPA-ASKEM Evalution" => "index.md",
              "Scenario1/Evaluation_Scenario_1.md",
-             #"Scenario2/Evaluation_Scenario_2.md",
-             #"Scenario3/Evaluation_Scenario_3.md",
+             "Scenario2/Evaluation_Scenario_2.md",
+             "Scenario3/Evaluation_Scenario_3.md",
          ])
 
 deploydocs(repo = "github.com/ChrisRackauckas/ASKEM_Evaluation_Staging")
