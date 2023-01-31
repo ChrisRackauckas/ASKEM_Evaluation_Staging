@@ -5,7 +5,7 @@
 This reads in the SIDARTHE model from a JSON formed from Semagrams.
 
 ```@example scenario2
-using Catlab, AlgebraicPetri, Catlab.CategoricalAlgebra
+using Catlab, AlgebraicPetri, Catlab.CategoricalAlgebra, ModelingToolkit
 import AlgebraicPetri.SubACSets
 sidarthe = read_json_acset(LabelledPetriNet,"sidarthe.json")
 sys_sidarthe = ODESystem(sidarthe)
