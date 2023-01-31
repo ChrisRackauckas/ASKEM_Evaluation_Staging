@@ -38,6 +38,27 @@ sol = solve(prob);
 plot(sol)
 ```
 
+```@example evalscenario3
+using Catlab, AlgebraicPetri
+sir = LabelledPetriNet([:S, :I, :R],
+  :inf => ((:S, :I)=>(:I, :I)),
+  :rec => (:I=>:R),
+)
+sir_sys = ODESystem(sir)
+```
+
+```@example evalscenario3
+tspan = (0.0, 40.0)
+u0 = [990, 10, 0]
+p = [0.05*10/1000, 0.25]
+sir_prob = ODEProblem(sir_sys, u0, tspan, p);
+sir_sol = solve(sir_prob);
+```
+
+```@example evalscenario3
+plot(sir_sol)
+```
+
 ### Perform Model Calibration
 
 #### Model Calibration Unit Test
