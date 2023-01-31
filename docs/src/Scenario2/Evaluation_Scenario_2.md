@@ -69,11 +69,18 @@ sysne = ODESystem(eqs2, ModelingToolkit.get_iv(sys), states(sys), parameters(sys
                  defaults = defs, name = nameof(sys))
 ssysne = structural_simplify(sysne)
 probne = ODEProblem(ssysne, [], (0.0, 100.0))
+solne = solve(probne, Tsit5())
+plot(solne)
+```
+
+```@example scenario2
 ITALY_POPULATION = 60e6
 idart = [Infected, Diagnosed, Ailing, Recognized, Threatened]
 xmax, xmaxval = get_max_t(probne, sum(idart))
-
 @test isapprox(xmax, 47; atol = 0.5)
+```
+
+```@example scenario2
 @test isapprox(xmaxval, 0.6, atol = 0.01)
 ```
 
@@ -87,7 +94,7 @@ p = plot(solne, vars = idart)
 ```
 
 ```@example scenario2
-p = plot(solne.t, sol[sum(idart)])
+p = plot(solne.t, solne[sum(idart)])
 ```
 
 #### Unit Test 2
@@ -123,15 +130,35 @@ solt1 = solve(prob_test1, Tsit5(); saveat = 0:100)
 og_states = states(sys)[1:8]
 idart = [Infected, Diagnosed, Ailing, Recognized, Threatened]
 plot(solt1; idxs = Infected)
-plot(solt1; idxs = Diagnosed)
-plot(solt1; idxs = idart)
-@test solt1[Infected + Healed] == solt1[Infected] + solt1[Healed]
-plot(solt1.t, solt1[sum(idart)] * ITALY_POPULATION; label = "IDART absolute")
-plot(solt1.t, solt1[sum(idart)]; label = "IDART percent")
+```
 
+```@example scenario2
+plot(solt1; idxs = Diagnosed)
+```
+
+```@example scenario2
+plot(solt1; idxs = idart)
+```
+
+```@example scenario2
+@test solt1[Infected + Healed] == solt1[Infected] + solt1[Healed]
+```
+
+```@example scenario2
+plot(solt1.t, solt1[sum(idart)] * ITALY_POPULATION; label = "IDART absolute")
+```
+
+```@example scenario2
+plot(solt1.t, solt1[sum(idart)]; label = "IDART percent")
+```
+
+```@example scenario2
 xmax, xmaxval = get_max_t(prob_test1, sum(idart))
 
 @test isapprox(xmax, 47; atol = 4)
+```
+
+```@example scenario2
 @test isapprox(xmaxval, 0.002; atol = 0.01)
 ```
 
@@ -151,12 +178,15 @@ parameter bound data which would make this a one line analysis.
 A utility was added (https://github.com/SciML/EasyModelAnalysis.jl/pull/134) to make it so the sensitivity values did not need to
 be recreated for the plotting process. This was just a minor performance and "niceity" improvement. Polish.
 
+The sensitivity analysis needed 1000 samples, we reduced it to 200 due to memory limitations of our documentation building 
+compute server.
+
 ```@example scenario2
 pbounds = [param => [
                0.5 * ModelingToolkit.defaults(sys)[param],
                2 * ModelingToolkit.defaults(sys)[param],
            ] for param in parameters(sys2)]
-sensres = get_sensitivity(probne, 100.0, Infected, pbounds; samples = 1000)
+sensres = get_sensitivity(probne, 100.0, Infected, pbounds; samples = 200)
 sensres_vec = collect(sensres)
 sort(filter(x->endswith(string(x[1]), "_first_order"), sensres_vec), by=x->abs(x[2]), rev = true)
 ```
@@ -334,16 +364,30 @@ sysv = eval(quote
 # todo set the event flags
 # todo validate the new params 
 sysv = complete(sysv)
+```
+
+```@example scenario2
 probv = ODEProblem(sysv, [], (0, 100))
 solv = solve(probv, Tsit5())
 plot(solv)
-plot(solv, idxs = [og_states; Vaccinated])
-plot(solt1; idxs = sum(idart))
+```
 
+```@example scenario2
+plot(solv, idxs = [og_states; Vaccinated])
+```
+
+```@example scenario2
+plot(solt1; idxs = sum(idart))
+```
+
+```@example scenario2
 xmax, xmaxval = get_max_t(probv, sum(idart) * ITALY_POPULATION)
 xmax, xmaxval = get_max_t(probv, sum(idart))
 
 @test isapprox(xmax, 47; atol = 5)
+```
+
+```@example scenario2
 @test isapprox(xmaxval, 0.6; atol = 0.1)
 ```
 
