@@ -98,12 +98,19 @@ plt_a1 = plot(sol, leg = :topright)
 > preference – you may choose the numbers in the matrix to represent this in-
 > group preference.
 
-We change the contact matrix by having significant (0.3)
+We pick a contact matrix with significant (0.4) in-group interaction
+and somewhat weak (but differening, to make the plots more interesting)
+off-diagonal interactions.
 
 ```@example scenario1
 contact_matrix = [0.4  0.05  0.1
                   0.05 0.4   0.15          
                   0.1  0.15  0.4]
+```
+
+We now use this updated contact matrix to re-run the simulation.
+
+```@example scenario1
 prob = ODEProblem(sys, [], (0, tf), vec(C .=> contact_matrix))
 sol = solve(prob)
 plt_a2 = plot(sol, leg = :topright)
@@ -211,8 +218,8 @@ plot(plt_a5, plt_b5, plt_c5)
 
 > Now find real contact matrix data and stratify the basic SIR model with the appropriate number of age groups to match the data found. To simulate the model with realistic initial values, find data on population distribution by age group. As in question 1, let gamma = 1/14 days, and let R0 = 5. Assume gamma, beta, and R0 are the same for all age groups.
 
-TA1 provided the data from "Projecting social contact matrices in 152 countries using contact surveys and demographic data" by Prem, et al.
-This paper comes with 10 Excel files that provide contact matrices
+TA1 provided the data from ["Projecting social contact matrices in 152 countries using contact surveys and demographic data"](https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1005697) by Prem, et al.
+This paper comes with [10 Excel files](https://doi.org/10.1371/journal.pcbi.1005697.s002) that provide contact matrices
 for 152 countries at work, home, school and other locations (plus
 a data set of the sum of these locations). The data values in these
 excel files are raw, averaged survey results.
@@ -266,7 +273,7 @@ pop_belg = values(CSV.read("data/2022_ Belgium_population_by_age.csv", DataFrame
 bar(1:length(pop_belg), collect(pop_belg), permute=(:x, :y), xlabel="Age (5 year buckets)", ylabel="Total # of people", leg=:none)
 ```
 
-```
+```@example scenario1
 # Set up model
 # Per MITRE: Assume that the same fixed fraction of the population in each stratum is initially infected. Here: 0.01%
 pop_assumption(_, nn) = nn * 0.0001
