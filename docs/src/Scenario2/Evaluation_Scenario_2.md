@@ -2,6 +2,12 @@
 
 ## Question 1
 
+This reads in the SIDARTHE model from a JSON formed from Semagrams.
+```@example scenario2
+sidarthe = read_json_acset(LabelledPetriNet,"sidarthe.json")
+sys_sidarthe = ODESystem(sidarthe)
+```
+
 ### Ingest SIDARTHE
 
 This is the version directly from the SBML file. This will be replaced with a version from TA1/TA2 when available. This used our
@@ -251,6 +257,30 @@ plot(sol_opt_p, idxs=[threshold_observable], lab="total infected", leg=:topright
 ```
 
 ## Question 2
+
+This forms SIDARTHE-V by manually adding the V state and vax transition. It compares the models via maximum common subacset, plotting both the common subgraph (the original SIDARTHE) and the complement (the new transition).
+
+```@example scenario2
+sidarthe_v = deepcopy(sidarthe)
+new_s = add_species!(sidarthe_v;sname=:V)
+new_t = add_transition!(sidarthe_v;tname=:vax)
+new_i = add_input!(sidarthe_v,new_t,1)
+new_o = add_output!(sidarthe_v,new_t,new_s)
+
+mca_sidarthe_v = mca(sidarthe,sidarthe_v)
+AlgebraicPetri.Graph(mca_sidarthe_v[1])
+
+sidarthe_sub = Subobject(
+  sidarthe_v,
+  S=parts(sidarthe, :S),
+  T=parts(sidarthe, :T),
+  I=parts(sidarthe, :I),
+  O=parts(sidarthe, :O)
+)
+AlgebraicPetri.Graph(dom(hom(negate(sidarthe_sub))))
+sys_sidarthe_v = ODESystem(sidarthe_v)
+```
+
 
 ### Ingest SIDARTHE-V
 
