@@ -49,7 +49,7 @@ ssys = structural_simplify(sys2)
 
 > Simulate for 100 days, and determine the day and level of peak total infections (sum over all the infected states I, D, A, R, T). Expected output: The peak should occur around day 47, when ~60% of the population is infected.
 
-```@example
+```@example scenario2
 
 ```
 
@@ -57,7 +57,7 @@ ssys = structural_simplify(sys2)
 
 > Now update the parameters to reflect various interventions that Italy implemented during the first wave, as described in detail on pg. 9.  Simulate for 100 days, reproduce the trajectories in Fig. 2B, and determine the day and level of peak total infections (sum over all the infected states I, D, A, R, T). Expected output: Trajectories in Fig. 2B, peak occurs around day 50, with ~0.2% of the total population infected.
 
-```@example
+```@example scenario2
 ITALY_POPULATION = 60e6
 u0s = [
     Infected => 200 / ITALY_POPULATION,
