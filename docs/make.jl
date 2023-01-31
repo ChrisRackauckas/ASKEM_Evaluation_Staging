@@ -41,7 +41,7 @@ makedocs(sitename = "DARPA-ASKEM Evalution",
          pages = [
              "DARPA-ASKEM Evalution" => "index.md",
              #"Scenario1/Evaluation_Scenario_1.md",
-             "Scenario2/Evalution_Scenario_2.md",
+             "Scenario2/Evaluation_Scenario_2.md",
              #"Scenario3/Evalution_Scenario_3.md",
          ])
 
