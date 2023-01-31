@@ -62,8 +62,8 @@ ITALY_POPULATION = 60e6
 idart = [Infected, Diagnosed, Ailing, Recognized, Threatened]
 xmax, xmaxval = get_max_t(probne, sum(idart))
 
-@test isapprox(xmax, 47; atol = 1)
-@test isapprox(xmaxval, 0.6, atol=1)
+@test isapprox(xmax, 47; atol = 0.5)
+@test isapprox(xmaxval, 0.6, atol = 0.01)
 ```
 
 #### Unit Test 2
