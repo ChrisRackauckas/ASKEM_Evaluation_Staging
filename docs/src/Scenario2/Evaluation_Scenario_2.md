@@ -79,8 +79,10 @@ xmax, xmaxval = get_max_t(probne, sum(idart))
 
 #### Full Analysis of the Effect of Events
 
-TBD Paul
+The SBML model already contains the changes of parameters requested for Unit Test #2 in the form of events. In the SBML these are enclosed by the element `listOfEvents`. The `id`s correspond to the days of the introduction of government intervention as outlined in the paper. "On day 4, R0 = 1.66 as a result of the introduction of basic social distancing, awareness of the epidemic, hygiene and behavioral recommendations, and early measures by the Italian government (for example, closing schools). At day 12, ... ". When we interpret the instructions "Unit Test #1: Set the initial values and parameters, as desribed in the Supplementary Methods..." as "Set the initial values and set and maintain the paramters (i.e. simulate without government restrictions)..." we have to remove the events from the model. If we do so, the unit tests pass.
 
+[](no_events.png)
+[](no_events_sum.png)
 #### Unit Test 2
 
 > Now update the parameters to reflect various interventions that Italy implemented during the first wave, as described in detail on pg. 9.  Simulate for 100 days, reproduce the trajectories in Fig. 2B, and determine the day and level of peak total infections (sum over all the infected states I, D, A, R, T). Expected output: Trajectories in Fig. 2B, peak occurs around day 50, with ~0.2% of the total population infected.
