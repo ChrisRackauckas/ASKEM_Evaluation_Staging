@@ -10,7 +10,11 @@ using EasyModelAnalysis, LinearAlgebra
 
 >  1. Begin with a basic SIR model without vital dynamics. Calibrate the model parameters using data on cases during the ‘training period’. Then evaluate the model during the out-of-sample ‘test period’.
 
-#### Sample Model, Swap in for TA1/TA2 model
+To get started with the code, we implemented the basic SIR without vital dynamics directly in ModelingToolkit.jl. This is a version
+that was written by an epidemiologist at Microsoft Pandemic, Simon Frost, who has become a fan of the TA3 automated simulation tools
+and wrote an entire repository of tutorials for this software. It is found at https://github.com/epirecipes/sir-julia.
+
+In there is an SIR without vital dynamics which we took in full.
 
 ```@example evalscenario3
 @parameters t β=0.05 c=10.0 γ=0.25
@@ -30,15 +34,16 @@ prob = ODEProblem(sys, [], tspan);
 sol = solve(prob);
 ```
 
-### Sample Model End
-
 ```@example evalscenario3
 plot(sol)
 ```
 
 ### Perform Model Calibration
 
-#### Make a fake dataset, swap in for TA1/TA2 code
+#### Model Calibration Unit Test
+
+As a unit test of the model calibration tools, we generated data at the default parameters, then ran the global optimization,
+to see how well the parameters were recovered.
 
 ```@example evalscenario3
 dataset = solve(prob, saveat = 0.1)
@@ -48,12 +53,12 @@ data_train = [S => dataset[S][1:201], I => dataset[I][1:201], R => dataset[R][1:
 data_test = [S => dataset[S][202:end], I => dataset[I][202:end], R => dataset[R][202:end]]
 ```
 
-#### Fake data code end
-
 ```@example evalscenario3
 fitparams = global_datafit(prob, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
                            t_train, data_train)
 ```
+
+This then gives the forecasts in the test data:
 
 ```@example evalscenario3
 _prob = remake(prob, p = fitparams)
@@ -72,7 +77,15 @@ plot(sol, idxs = R)
 plot!(t_test, data_test[3][2])
 ```
 
+This looks very good and matches the original data, confirming that the inverse problem functionality is functional.
+
+#### Application to Real Data from TA1
+
 ## Question 2: Add Hospitalizations and Deaths
+
+Question 2 involves doing the same analysis as question one but on the SIR model with hopsitalizations and deaths included.
+To establish unit tests, we first showcase building the model and solving inverse problems using the ModelingToolkit version
+of the model.
 
 ```@example evalscenario3
 @parameters t β=0.1 c=10.0 γ=0.25 ρ=0.1 h=0.1 d=0.1 r=0.1
@@ -97,10 +110,15 @@ sol = solve(prob2);
 plot(sol)
 ```
 
+The inverse problem solving is done via the same functionality as before.
+
 ```@example evalscenario3
 fitparams2 = global_datafit(prob2, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
                             t_train, data_train)
 ```
+
+Notice that this fit is not as good. That is to be expected because it's fitting the SIRHD model on the
+SIR model's output data. Thus we should expect that it also does not forecast entirely correctly.
 
 ```@example evalscenario3
 _prob2 = remake(prob2, p = fitparams2)
@@ -119,7 +137,13 @@ plot(sol, idxs = R)
 plot!(t_test, data_test[3][2])
 ```
 
+This checks out.
+
 ### Evaluate Model Forecasts
+
+In order to evaluate the model forecasts, we developed a functional which does the forecasting part with multiple models
+and puts a score on the forecast result. This score is calculated using the L2 norm. It was added to the EasyModelAnalysis.jl
+library in https://github.com/SciML/EasyModelAnalysis.jl/pull/129 as part of the evaluation on day 1.
 
 ```@example evalscenario3
 norm(solve(_prob, saveat = t_test)[S] - data_test[1][2]) +
@@ -134,6 +158,10 @@ norm(solve(_prob2, saveat = t_test)[R] - data_test[3][2])
 ```
 
 ## Question 3: Add Vaccinations
+
+Question 3 is the same analysis as questions 1 and 2 done on a model with vaccination added. In order to build unit tests for
+the analysis and functionality, we started by building the model with vaccine by hand, awaiting a swap to the version from
+TA2.
 
 ```@example evalscenario3
 @parameters t β=0.1 c=10.0 γ=0.25 ρ=0.1 h=0.1 d=0.1 r=0.1 v=0.1
@@ -159,21 +187,27 @@ eqs = [∂(S) ~ -β * c * I_total / N * S - v * Sv,
 sys3 = structural_simplify(sys3)
 ```
 
+The unit test analysis code is as follows:
+
 ```@example evalscenario3
 
 ```
 
 ## Question 4: Age-Stratified Model
 
-#### Same as the other questions, just on a different model
+Question 4 is the same analysis as questions 1, 2, and 3 on a model with age-stratification added. In order to build unit tests for
+the analysis and functionality, we started by building the model with vaccine by hand, awaiting a swap to the version from
+TA2.
 
 ## Question 5: Add Reinfection
 
-#### Same as the other questions, just on a different model
+Question 5 is the same analysis as questions 1, 2, 3, and 4 on a model with reinfection added. In order to build unit tests for
+the analysis and functionality, we started by building the model with vaccine by hand, awaiting a swap to the version from
+TA2.
 
 ## Question 6: New Data
 
-#### Same as the other questions, just on new data
+Question 6 is currently awaiting data from TA3
 
 ## Question 7: Analysis
 
@@ -183,3 +217,5 @@ For each model, summarize your conclusions about the following:
  2. Describe how well the fitted model compares against historical data, both for the ‘training’ and ‘test’ periods.
 
 ### Answer
+
+Question 7 is currently awaiting data from TA3

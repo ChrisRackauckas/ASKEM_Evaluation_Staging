@@ -363,6 +363,8 @@ the ASKEM hackathon. It was able to be used without modification. However, a mod
 what the "intervention parameters" are. A data request back to TA1/TA2 has been made to define which parameters should be in this
 set.
 
+This example revealed a typo in our function (https://github.com/SciML/EasyModelAnalysis.jl/pull/135) which had to be fixed.
+
 ```@example scenario2
 intervention_parameters = [theta] # Need to figure out what these should be
 [p => EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob,
