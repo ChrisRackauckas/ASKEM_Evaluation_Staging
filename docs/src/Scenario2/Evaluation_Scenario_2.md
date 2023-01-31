@@ -4,6 +4,10 @@
 
 ### Ingest SIDARTHE
 
+This is the version directly from the SBML file. This will be replaced with a version from TA1/TA2 when available. This used our
+[SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl) library which reads SBML into ModelingToolkit and generates TeX'd versions
+of the equations so we could read the resulting model and confirm it is correct against the paper description.
+
 ```@example scenario2
 using EasyModelAnalysis, SBML, SBMLToolkit, UnPack, Test
 
@@ -48,9 +52,17 @@ ssys = structural_simplify(sys2)
 
 > Simulate for 100 days, and determine the day and level of peak total infections (sum over all the infected states I, D, A, R, T). Expected output: The peak should occur around day 47, when ~60% of the population is infected.
 
-Note that this unit test requires no continuous events (discrete updates) from
-the SBML model only the pure dynamics model is needed, so we drop the continuous
-events here.
+The SBML model that was given had a few oddities. First, it made use of `delay` blocks. These are usually used to describe a
+[delay differential equation](https://en.wikipedia.org/wiki/Delay_differential_equation). While our
+[simulator does have the capability to solve delay differential equations](https://docs.sciml.ai/DiffEqDocs/stable/tutorials/dde_example/)
+and [their inverse problems](https://docs.sciml.ai/SciMLSensitivity/dev/examples/dde/delay_diffeq/), it turns out that this was an issue
+with the SBML writing of the model as all of the delay values were zero. Thus as a simplification, we manually deleted the delay blocks
+to give a standard ODE representation (since a delay of 0 on all states is mathematically equivalent).
+
+The paper and SBML model also described time-dependent parameters. These are parameters that would discretely change at pre-specified
+time points. However, we believe that the evaluators and/or paper must have used an SBML reading system that incorrectly handled these
+time-dependent parameters. This is because dropping the time-dependency and treating the parameters as constant gives the requested
+results of the unit test 1. A demonstration of this is as follows:
 
 ```@example scenario2
 sysne = ODESystem(eqs2, ModelingToolkit.get_iv(sys), states(sys), parameters(sys);
@@ -64,6 +76,10 @@ xmax, xmaxval = get_max_t(probne, sum(idart))
 @test isapprox(xmax, 47; atol = 0.5)
 @test isapprox(xmaxval, 0.6, atol = 0.01)
 ```
+
+#### Full Analysis of the Effect of Events
+
+TBD Paul
 
 #### Unit Test 2
 
