@@ -5,7 +5,6 @@
 ### Ingest SIDARTHE
 
 ```@example scenario2
-cd(@__DIR__)
 using OrdinaryDiffEq, ModelingToolkit, EasyModelAnalysis, SBML, SBMLToolkit, UnPack, Test
 import Plots
 
