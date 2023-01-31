@@ -259,6 +259,20 @@ opt_p
 plot(sol_opt_p, idxs=[threshold_observable], lab="total infected", leg=:topright)
 ```
 
+```@example scenario2
+params = map(t -> ModelingToolkit.defaults(sys)[eval(:(@nonamespace sys.$(Symbol(chop(string(t); head=1, tail=0)))))], sidarthe[:,:tname])
+
+name_mapping = Dict(s => only(filter(n -> string(n)[1] == string(s)[1], long_names)) for s in sidarthe[:,:sname])
+
+inits = map(s -> ModelingToolkit.defaults(sys)[eval(:(@nonamespace sys.$(name_mapping[s])))], sidarthe[:,:sname])
+
+paramd_sidarthe = LabelledReactionNet{Float64, Float64}(sidarthe, zip(sidarthe[:,:sname], inits), zip(sidarthe[:,:tname], params))
+
+prob = ODEProblem(paramd_sidarthe)
+sol = solve(prob, Tsit5())
+plot(sol)
+```
+
 ## Question 2
 
 This forms SIDARTHE-V by manually adding the V state and vax transition. It compares the models via maximum common subacset, plotting both the common subgraph (the original SIDARTHE) and the complement (the new transition).
