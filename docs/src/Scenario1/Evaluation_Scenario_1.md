@@ -6,6 +6,8 @@
 using EasyModelAnalysis, LinearAlgebra
 using EasyModelAnalysis.ModelingToolkit: toparam
 using EasyModelAnalysis.ModelingToolkit.Symbolics: FnType, variables
+using XLSX
+
 tf = 600
 @parameters γ=1 / 14 R0=5
 β = R0 * γ
