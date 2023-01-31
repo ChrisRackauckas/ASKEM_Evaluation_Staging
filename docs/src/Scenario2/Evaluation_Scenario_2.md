@@ -49,14 +49,21 @@ ssys = structural_simplify(sys2)
 
 > Simulate for 100 days, and determine the day and level of peak total infections (sum over all the infected states I, D, A, R, T). Expected output: The peak should occur around day 47, when ~60% of the population is infected.
 
+This unit test requires deletion of the events in the SBML (or elsewhere). We deleted in the SBML.
+
 ```@example scenario2
-prob = ODEProblem(ssys, [], (0, 100))
+fn_noevs = joinpath("..", "docs", "src", "Scenario2", "Giordano2020_noevs.xml")
+mne = myread(fn_noevs)
+rnne = ReactionSystem(mne)
+sysne = convert(ODESystem, rnne)
+ssysne = structural_simplify(sysne)
+probne = ODEProblem(ssysne, [], (0.0, 100.0))
 ITALY_POPULATION = 60e6
 idart = [Infected, Diagnosed, Ailing, Recognized, Threatened]
-xmax, xmaxval = get_max_t(prob, sum(idart) * ITALY_POPULATION)
+xmax, xmaxval = get_max_t(probne, sum(idart))
 
-@test isapprox(xmax, 47; atol = 5)
-@test_broken isapprox(xmaxval, 0.6)
+@test isapprox(xmax, 47; atol = 1)
+@test isapprox(xmaxval, 0.6, atol=1)
 ```
 
 #### Unit Test 2
