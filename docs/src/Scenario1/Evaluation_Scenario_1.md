@@ -6,7 +6,7 @@
 using EasyModelAnalysis, LinearAlgebra
 using EasyModelAnalysis.ModelingToolkit: toparam
 using EasyModelAnalysis.ModelingToolkit.Symbolics: FnType, variables
-using XLSX
+using XLSX, CSV
 
 tf = 600
 @parameters γ=1 / 14 R0=5
@@ -129,19 +129,19 @@ prob = ODEProblem(sys, [], (0, tf))
 sol = solve(prob)
 plt1 = plot(sol, leg = :topright, title = "i")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> contact_matrix)])
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> contact_matrix))
 sol = solve(prob)
 plt2 = plot(sol, leg = :topright, title = "ii")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> Diagonal(contact_matrix))])
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> Diagonal(contact_matrix)))
 sol = solve(prob)
 plt3 = plot(sol, leg = :topright, title = "iii")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> 0.5 * contact_matrix)])
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> 0.5 * contact_matrix))
 sol = solve(prob)
 plt4 = plot(sol, leg = :topright, title = "iv")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> scaling * contact_matrix)])
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> scaling * contact_matrix))
 sol = solve(prob)
 plt5 = plot(sol, leg = :topright, title = "v")
 plot(plt1, plt2, plt3, plt4, plt5, size = (1000, 500))
