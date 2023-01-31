@@ -69,11 +69,18 @@ sysne = ODESystem(eqs2, ModelingToolkit.get_iv(sys), states(sys), parameters(sys
                  defaults = defs, name = nameof(sys))
 ssysne = structural_simplify(sysne)
 probne = ODEProblem(ssysne, [], (0.0, 100.0))
+solne = solve(probne, Tsit5())
+plot(solne)
+```
+
+```@example scenario2
 ITALY_POPULATION = 60e6
 idart = [Infected, Diagnosed, Ailing, Recognized, Threatened]
 xmax, xmaxval = get_max_t(probne, sum(idart))
-
 @test isapprox(xmax, 47; atol = 0.5)
+```
+
+```@example scenario2
 @test isapprox(xmaxval, 0.6, atol = 0.01)
 ```
 
@@ -123,15 +130,35 @@ solt1 = solve(prob_test1, Tsit5(); saveat = 0:100)
 og_states = states(sys)[1:8]
 idart = [Infected, Diagnosed, Ailing, Recognized, Threatened]
 plot(solt1; idxs = Infected)
-plot(solt1; idxs = Diagnosed)
-plot(solt1; idxs = idart)
-@test solt1[Infected + Healed] == solt1[Infected] + solt1[Healed]
-plot(solt1.t, solt1[sum(idart)] * ITALY_POPULATION; label = "IDART absolute")
-plot(solt1.t, solt1[sum(idart)]; label = "IDART percent")
+```
 
+```@example scenario2
+plot(solt1; idxs = Diagnosed)
+```
+
+```@example scenario2
+plot(solt1; idxs = idart)
+```
+
+```@example scenario2
+@test solt1[Infected + Healed] == solt1[Infected] + solt1[Healed]
+```
+
+```@example scenario2
+plot(solt1.t, solt1[sum(idart)] * ITALY_POPULATION; label = "IDART absolute")
+```
+
+```@example scenario2
+plot(solt1.t, solt1[sum(idart)]; label = "IDART percent")
+```
+
+```@example scenario2
 xmax, xmaxval = get_max_t(prob_test1, sum(idart))
 
 @test isapprox(xmax, 47; atol = 4)
+```
+
+```@example scenario2
 @test isapprox(xmaxval, 0.002; atol = 0.01)
 ```
 
@@ -337,16 +364,30 @@ sysv = eval(quote
 # todo set the event flags
 # todo validate the new params 
 sysv = complete(sysv)
+```
+
+```@example scenario2
 probv = ODEProblem(sysv, [], (0, 100))
 solv = solve(probv, Tsit5())
 plot(solv)
-plot(solv, idxs = [og_states; Vaccinated])
-plot(solt1; idxs = sum(idart))
+```
 
+```@example scenario2
+plot(solv, idxs = [og_states; Vaccinated])
+```
+
+```@example scenario2
+plot(solt1; idxs = sum(idart))
+```
+
+```@example scenario2
 xmax, xmaxval = get_max_t(probv, sum(idart) * ITALY_POPULATION)
 xmax, xmaxval = get_max_t(probv, sum(idart))
 
 @test isapprox(xmax, 47; atol = 5)
+```
+
+```@example scenario2
 @test isapprox(xmaxval, 0.6; atol = 0.1)
 ```
 
@@ -434,7 +475,7 @@ R0 = Infected # how is R0 defined from the states?
 
 ```@example scenario2
 intervention_parameters = [theta] # Need to figure out what these should be
-[p => EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, R0, 1.0,
+res = [p => EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, R0, 1.0,
                                                                      p -
                                                                      ModelingToolkit.defaults(sys)[p],
                                                                      [p], [0.0],
@@ -444,4 +485,5 @@ intervention_parameters = [theta] # Need to figure out what these should be
                                                                      (30.0, 100.0);
                                                                      maxtime = 60)
  for p in intervention_parameters]
+res[1][1]
 ```
