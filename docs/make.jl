@@ -48,4 +48,4 @@ makedocs(sitename = "DARPA-ASKEM Evalution",
              #"Scenario3/Evaluation_Scenario_3.md",
          ])
 
-deploydocs(repo = "github.com/ChrisRackauckas/ASKEM_Evaluation_Staging.jl")
+deploydocs(repo = "github.com/ChrisRackauckas/ASKEM_Evaluation_Staging")
