@@ -26,7 +26,7 @@ mathengine = MathJax3(Dict(:loader => Dict("load" => ["[tex]/require", "[tex]/ma
                                             "require",
                                         ])))
 
-makedocs(sitename = "DARPA-ASKEM Evalution",
+makedocs(sitename = "DARPA-ASKEM Evaluation",
          authors = "Chris Rackauckas",
          modules = Module[EasyModelAnalysis],
          clean = true, doctest = false,
