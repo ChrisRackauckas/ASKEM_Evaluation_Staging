@@ -22,6 +22,7 @@ using OrdinaryDiffEq, ModelingToolkit, EasyModelAnalysis, SBML, SBMLToolkit, UnP
 import Plots
 
 fn = "Giordano2020.xml"
+fn = joinpath("..", "docs", "src", "Scenario2", "Giordano2020.xml")
 
 myread(fn) = readSBML(fn, doc -> begin
                           set_level_and_version(3, 2)(doc)
@@ -44,6 +45,9 @@ ps = [alpha, epsilon, gamma, beta, delta, mu, nu, lambda, rho, kappa, xi, sigma,
 D = Differential(t)
 eqs2 = deepcopy(eqs)
 append!(eqs2, D.(ps) .~ 0)
+
+sys_noevs = ODESystem(eqs, ModelingToolkit.get_iv(sys), states(sys), parameters(sys);
+                defaults = defs, name = nameof(sys))
 
 sys2 = ODESystem(eqs2, ModelingToolkit.get_iv(sys), states(sys), parameters(sys);
                  continuous_events = evs, defaults = defs, name = nameof(sys))
