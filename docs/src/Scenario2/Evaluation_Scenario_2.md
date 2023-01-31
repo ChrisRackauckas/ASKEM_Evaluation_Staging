@@ -135,6 +135,9 @@ of the bounds for the parameters, which was not given by the metadata from TA1/T
 parameter set is 50% below and 100% above the starting parameter choice. Future iterations of the modeling platform should preserve
 parameter bound data which would make this a one line analysis.
 
+A utility was added (https://github.com/SciML/EasyModelAnalysis.jl/pull/134) to make it so the sensitivity values did not need to
+be recreated for the plotting process. This was just a minor performance and "niceity" improvement. Polish.
+
 ```@example scenario2
 pbounds = [param => [
                0.5 * ModelingToolkit.defaults(sys)[param],
