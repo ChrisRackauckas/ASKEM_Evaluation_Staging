@@ -367,7 +367,8 @@ defs_v2[sysv.tau1] = defs[tau]
 defs_v2[sysv.tau] = defs[tau] / 3
 defs_v2[sysv.phi] = 0
 probv2 = remake(probv; p = defs_v2)
-plot(solve(probv2))
+solv2 = solve(probv2)
+plot(solv2)
 ```
 
 ### b.i
@@ -392,7 +393,7 @@ This example revealed a typo in our function (https://github.com/SciML/EasyModel
 ```@example scenario2
 threshold_observable = (Infected + Diagnosed + Ailing + Recognized + Threatened) /
                        sum(states(sysv))
-plot(solve(probv2), idxs=[threshold_observable], lab="total infected")
+plot(solv2, idxs=[threshold_observable], lab="total infected")
 hline!([1/3], lab="limit")
 ```
 
@@ -414,31 +415,59 @@ have less than 1/3 of the population infected.
 
 ### b.ii
 
-> Let’s say our goal is to get the reproduction number R0 below 1.0, at some point within the next 100 days. Are there interventions that will allow us to meet our goal? If there are multiple options, which single intervention would have the greatest impact on R0 and let us meet our goal with minimal change to the intervention parameter? Assume that the intervention will be implemented after one month (t = day 30), and will stay constant after that, over the remaining time period (i.e. the following 70 days).
+> Let’s say our goal is to get the reproduction number R0 below 1.0, at some
+> point within the next 100 days. Are there interventions that will allow us to
+> meet our goal? If there are multiple options, which single intervention would
+> have the greatest impact on R0 and let us meet our goal with minimal change to
+> the intervention parameter? Assume that the intervention will be implemented
+> after one month (t = day 30), and will stay constant after that, over the
+> remaining time period (i.e. the following 70 days).
 
-In order to do this scenario a modeling decision for how to represent R0 in terms of the states was required. This needed expert
-information, which we called out for and documented the results in https://github.com/ChrisRackauckas/ASKEM_Evaluation_Staging/issues/20.
-This led us to a definition of the instantanious R0 as defined in https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7325187/. Thus using this
-definition of R0 and our intervention functionality designed to find parameters to keep a value below a threshold, we were able to
-solve for the intervention.
+In order to do this scenario a modeling decision for how to represent R0 in
+terms of the states was required. This needed expert information, which we
+called out for and documented the results in https:
+//github.com/ChrisRackauckas/ASKEM_Evaluation_Staging/issues/20. This led us to
+a definition of the instantanious R0 as defined in https:
+//www.ncbi.nlm.nih.gov/pmc/articles/PMC7325187/ equation 1. However, the R
+computation requires the mean duration of infectiousness, we will use `D=20` for
+now to have a non-trivial optimization. Thus using this definition of R0 and our
+intervention functionality designed to find parameters to keep a value below a
+threshold, we were able to solve for the intervention.
 
 Another modeling decision required here was the definition of intervention parameters, which we decided to use the same parameters
 as b.i.
 
 ```@example scenario2
-R0 = Infected # how is R0 defined from the states?
+D = 20
+R0 = sysv.alpha * sysv.Susceptible * D # double check
+plot(solv2, idxs=[R0])
 ```
 
 ```@example scenario2
-intervention_parameters = [theta] # Need to figure out what these should be
-[p => EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, R0, 1.0,
-                                                                     p -
-                                                                     ModelingToolkit.defaults(sys)[p],
-                                                                     [p], [0.0],
-                                                                     3 .* [
-                                                                         ModelingToolkit.defaults(sys)[p],
-                                                                     ],
-                                                                     (30.0, 100.0);
-                                                                     maxtime = 60)
- for p in intervention_parameters]
+intervention_parameters = [
+    sysv.theta => (2 * defs_v2[sysv.eta], 1) # 𝜃 >= 2 * 𝜀
+    sysv.eta => (0, defs_v2[sysv.theta] / 2)
+    sysv.phi => (0, 1)
+]
+opt_results = map(intervention_parameters) do (intervention_p, bounds)
+    cost = intervention_p - defs_v2[intervention_p]
+    optimal_parameter_intervention_for_reach(probv2,
+                                             R0,
+                                             1.0,
+                                             cost,
+                                             [intervention_p], [bounds[1]], [bounds[2]],
+                                             (30.0, 100.0);
+                                             maxtime = 10);
+end;
+map(first, opt_results)
+```
+
+```@example scenario2
+plts = map(opt_results) do opt_result
+    title = only(collect(opt_result[1]))
+    title = title[1] => round(title[2], sigdigits=3)
+    plot(opt_result[2][2]; idxs=[R0], lab = "R0", title)
+    hline!([1], lab="limit")
+end
+plot(plts...)
 ```
