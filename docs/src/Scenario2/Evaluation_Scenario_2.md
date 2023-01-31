@@ -5,7 +5,7 @@
 ### Ingest SIDARTHE
 
 ```@example scenario2
-using OrdinaryDiffEq, ModelingToolkit, EasyModelAnalysis, SBML, SBMLToolkit, UnPack, Test
+using EasyModelAnalysis, SBML, SBMLToolkit, UnPack, Test
 import Plots
 
 fn = "Giordano2020.xml"
