@@ -6,7 +6,7 @@
 using EasyModelAnalysis, LinearAlgebra
 using EasyModelAnalysis.ModelingToolkit: toparam
 using EasyModelAnalysis.ModelingToolkit.Symbolics: FnType, variables
-using XLSX, CSV
+using XLSX, CSV, DataFrames
 
 tf = 600
 @parameters γ=1 / 14 R0=5
