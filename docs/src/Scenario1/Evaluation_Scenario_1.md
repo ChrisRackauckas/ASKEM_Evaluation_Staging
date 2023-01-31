@@ -295,7 +295,7 @@ hm = heatmap(cm_india, yflip=true)
 
 # Load India population distribution
 pop_india = values(CSV.read("data/2016_india_population_by_age.csv", DataFrame)[1, 3:18])
-bar_india = bar(1:length(pop_belg), collect(pop_belg), permute=(:x, :y), xlabel="Age (5 year buckets)", ylabel="Total # of people", leg=:none)
+bar_india = bar(1:length(pop_india), collect(pop_india), permute=(:x, :y), xlabel="Age (5 year buckets)", ylabel="Total # of people", leg=:none)
 plot(hm, bar_india)
 ```
 
