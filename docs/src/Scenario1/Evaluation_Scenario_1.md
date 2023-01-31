@@ -211,7 +211,7 @@ plot(sol, leg = :topright)
 > Prem et al Supplementary info, page 20
 
 ```@example scenario1
-function cm_school(xfs)
+function cm_school(xfs, country)
     to_cm(xfs[:home][country]) + to_cm(xfs[:work][country]) + to_cm(xfs[:other][country])
 end # no school
 
