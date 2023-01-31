@@ -333,6 +333,7 @@ sysv = eval(quote
             end)
 # todo set the event flags
 # todo validate the new params 
+sysv = complete(sysv)
 probv = ODEProblem(sysv, [], (0, 100))
 solv = solve(probv, Tsit5())
 plot(solv)
@@ -348,15 +349,38 @@ xmax, xmaxval = get_max_t(probv, sum(idart))
 
 ### Setup the Parameters
 
-> Set the same initial values and parameter settings in 1.b.i. Let V(t=0) = 0, τ (in SIDARTHE) = τ2 (in SIDDARTHE-V), and τ1 = (1/3)\*τ2 (reflecting the fact that the mortality rate for critical conditions (state T), will always be larger than for other infected states). Assume that the vaccination rate psi is 0 to start with. The SIDARTHE-V model allows for three main types of interventions: (1) Those that impact the transmission parameters (α, β, γ and δ) – social distancing, masking, lockdown; (2) Those that impact the detection parameters (ε, θ) – testing and contact tracing; (3) Those that impact the vaccination rate psi – vaccination campaigns. Assume previously stated constraints: θ >= 2* ε, and τ1 = (1/3)*τ2.
+> Set the same initial values and parameter settings in 1.b.i. Let V(t=0) = 0, τ
+> (in SIDARTHE) = τ2 (in SIDDARTHE-V), and τ1 = (1/3)\*τ2 (reflecting the fact
+> that the mortality rate for critical conditions (state T), will always be
+> larger than for other infected states). Assume that the vaccination rate psi
+> is 0 to start with. The SIDARTHE-V model allows for three main types of
+> interventions: (1) Those that impact the transmission parameters (α, β, γ and
+> δ) – social distancing, masking, lockdown; (2) Those that impact the detection
+> parameters (ε, θ) – testing and contact tracing; (3) Those that impact the
+> vaccination rate psi – vaccination campaigns. Assume previously stated
+> constraints: θ >= 2* ε, and τ1 = (1/3)*τ2.
 
 ```@example scenario2
-
+# TODO: double check. I am assuming our `tau` is `tau1` and `tau1` is `tau2`.
+defs_v2 = deepcopy(ModelingToolkit.defaults(sysv))
+defs_v2[sysv.tau1] = defs[tau]
+defs_v2[sysv.tau] = defs[tau] / 3
+defs_v2[sysv.phi] = 0
+probv2 = remake(probv; p = defs_v2)
+plot(solve(probv2))
 ```
 
 ### b.i
 
-> Let’s say our goal is to ensure that the total infected population (sum over all the infected states I, D, A, R, T) never rises above 1/3 of the total population, over the course of the next 100 days. If you could choose only a single intervention (affecting only one parameter), which intervention would let us meet our goal, with minimal change to the intervention parameter? Assume that the intervention will be implemented after one month (t = day 30), and will stay constant after that, over the remaining time period (i.e. the following 70 days). What are equivalent interventions of the other two intervention types, that would have the same impact on total infections?
+> Let’s say our goal is to ensure that the total infected population (sum over
+> all the infected states I, D, A, R, T) never rises above 1/3 of the total
+> population, over the course of the next 100 days. If you could choose only a
+> single intervention (affecting only one parameter), which intervention would
+> let us meet our goal, with minimal change to the intervention parameter?
+> Assume that the intervention will be implemented after one month (t = day 30),
+> and will stay constant after that, over the remaining time period (i.e. the
+> following 70 days). What are equivalent interventions of the other two
+> intervention types, that would have the same impact on total infections?
 
 This is a straightforward usage of the `EasyModelAnalysis.optimal_parameter_intervention_for_threshold` function designed during
 the ASKEM hackathon. It was able to be used without modification. However, a modeling decision had to be made to define
@@ -366,20 +390,27 @@ set.
 This example revealed a typo in our function (https://github.com/SciML/EasyModelAnalysis.jl/pull/135) which had to be fixed.
 
 ```@example scenario2
-intervention_parameters = [theta] # Need to figure out what these should be
-[p => EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob,
-                                                                     threshold_observable,
-                                                                     0.33,
-                                                                     p -
-                                                                     ModelingToolkit.defaults(sys)[p],
-                                                                     [p], [0.0],
-                                                                     3 .* [
-                                                                         ModelingToolkit.defaults(sys)[p],
-                                                                     ],
-                                                                     (30.0, 100.0);
-                                                                     maxtime = 60)
- for p in intervention_parameters]
+threshold_observable = (Infected + Diagnosed + Ailing + Recognized + Threatened) /
+                       sum(states(sysv))
+plot(solve(probv2), idxs=[threshold_observable], lab="total infected")
+hline!([1/3], lab="limit")
 ```
+
+```@example scenario2
+intervention_p = phi # Need to figure out what these should be
+cost = intervention_p - defs_v2[intervention_p]
+opt_p, solv2_s, ret = optimal_parameter_intervention_for_threshold(probv2,
+                                                 threshold_observable,
+                                                 0.33,
+                                                 cost,
+                                                 [intervention_p], [0.0], [1.0],
+                                                 (30.0, 100.0);
+                                                 maxtime = 10);
+opt_p
+```
+Note that the optimization solution is trivial, i.e. there's no intervention at
+all. This is expected because the model without any intervention would already
+have less than 1/3 of the population infected.
 
 ### b.ii
 
