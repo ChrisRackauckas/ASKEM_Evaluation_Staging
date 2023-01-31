@@ -87,7 +87,7 @@ p = plot(solne, vars = idart)
 ```
 
 ```@example scenario2
-p = plot(solne.t, sol[sum(idart)])
+p = plot(solne.t, solne[sum(idart)])
 ```
 
 #### Unit Test 2
