@@ -165,7 +165,7 @@ xf_other1 = XLSX.readxlsx("data/MUestimates_other_locations_1.xlsx")
 xf_other2 = XLSX.readxlsx("data/MUestimates_other_locations_2.xlsx")
 
 xfs1 = (; all = xf_all_locations1, work = xf_work1, school = xf_school1,
-        :home => xf_home1, :other = xf_other1)
+        home = xf_home1, other = xf_other1)
 xfs2 = (; all = xf_all_locations2, work = xf_work2, school = xf_school2,
         home = xf_home2, other = xf_other2)
 
