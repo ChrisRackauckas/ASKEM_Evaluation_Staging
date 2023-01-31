@@ -343,6 +343,15 @@ intervention_parameters = [theta] # Need to figure out what these should be
 
 > Let’s say our goal is to get the reproduction number R0 below 1.0, at some point within the next 100 days. Are there interventions that will allow us to meet our goal? If there are multiple options, which single intervention would have the greatest impact on R0 and let us meet our goal with minimal change to the intervention parameter? Assume that the intervention will be implemented after one month (t = day 30), and will stay constant after that, over the remaining time period (i.e. the following 70 days).
 
+In order to do this scenario a modeling decision for how to represent R0 in terms of the states was required. This needed expert
+information, which we called out for and documented the results in https://github.com/ChrisRackauckas/ASKEM_Evaluation_Staging/issues/20.
+This led us to a definition of the instantanious R0 as defined in https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7325187/. Thus using this
+definition of R0 and our intervention functionality designed to find parameters to keep a value below a threshold, we were able to
+solve for the intervention.
+
+Another modeling decision required here was the definition of intervention parameters, which we decided to use the same parameters
+as b.i.
+
 ```@example scenario2
 R0 = Infected # how is R0 defined from the states?
 ```
