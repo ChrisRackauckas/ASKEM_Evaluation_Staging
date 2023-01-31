@@ -50,7 +50,13 @@ ssys = structural_simplify(sys2)
 > Simulate for 100 days, and determine the day and level of peak total infections (sum over all the infected states I, D, A, R, T). Expected output: The peak should occur around day 47, when ~60% of the population is infected.
 
 ```@example scenario2
+prob = ODEProblem(ssys, [], (0, 100))
+ITALY_POPULATION = 60e6
+idart = [Infected, Diagnosed, Ailing, Recognized, Threatened]
+xmax, xmaxval = get_max_t(prob, sum(idart) * ITALY_POPULATION)
 
+@test isapprox(xmax, 47; atol = 5)
+@test_broken isapprox(xmaxval, 0.6)
 ```
 
 #### Unit Test 2
