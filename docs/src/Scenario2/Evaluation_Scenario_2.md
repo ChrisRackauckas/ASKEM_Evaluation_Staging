@@ -112,7 +112,11 @@ xmax, xmaxval = get_max_t(prob_test1, sum(idart))
 
 ### Sensitivity Analysis
 
-> The difference between 1.b.i and 1.b.ii are changes in some parameter values over time. Describe the difference in outcomes between b.i and b.ii. Perform a sensitivity analysis to understand the sensitivity of the model to parameter variations and determine which parameter(s) were most responsible for the change in outcomes.
+> The difference between 1.b.i and 1.b.ii are changes in some parameter values
+> over time. Describe the difference in outcomes between b.i and b.ii. Perform a
+> sensitivity analysis to understand the sensitivity of the model to parameter
+> variations and determine which parameter(s) were most responsible for the
+> change in outcomes.
 
 This analysis was a straightforward application of the `get_sensitivity` function in EasyModelAnalysis. The only issue was the creation
 of the bounds for the parameters, which was not given by the metadata from TA1/TA2. Thus we made a modeling choice that the viable
@@ -124,11 +128,21 @@ pbounds = [param => [
                0.5 * ModelingToolkit.defaults(sys)[param],
                2 * ModelingToolkit.defaults(sys)[param],
            ] for param in parameters(sys2)]
-sensres = get_sensitivity(prob, 100.0, Infected, pbounds; samples = 200)
+sensres = get_sensitivity(prob, 100.0, Infected, pbounds; samples = 1000)
+sensres_vec = collect(sensres)
+sort(filter(x->endswith(string(x[1]), "_first_order"), sensres_vec), by=x->abs(x[2]), rev = true)
 ```
 
 ```@example scenario2
-create_sensitivity_plot(prob, 100.0, Infected, pbounds; samples = 200)
+sort(filter(x->endswith(string(x[1]), "_second_order"), sensres_vec), by=x->abs(x[2]), rev = true)
+```
+
+```@example scenario2
+sort(filter(x->endswith(string(x[1]), "_total_order"), sensres_vec), by=x->abs(x[2]), rev = true)
+```
+
+```@example scenario2
+create_sensitivity_plot(sensres, pbounds)
 ```
 
 ### Mininmum Parameter Threshold
