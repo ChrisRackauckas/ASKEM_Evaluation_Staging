@@ -364,6 +364,9 @@ sysv = eval(quote
 # todo set the event flags
 # todo validate the new params 
 sysv = complete(sysv)
+```
+
+```@example scenario2
 probv = ODEProblem(sysv, [], (0, 100))
 solv = solve(probv, Tsit5())
 plot(solv)
