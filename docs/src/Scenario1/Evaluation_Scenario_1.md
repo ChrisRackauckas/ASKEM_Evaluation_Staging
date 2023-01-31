@@ -6,7 +6,7 @@
 using EasyModelAnalysis, LinearAlgebra
 using EasyModelAnalysis.ModelingToolkit: toparam
 using EasyModelAnalysis.ModelingToolkit.Symbolics: FnType, variables
-using XLSX
+using XLSX, CSV, DataFrames
 
 tf = 600
 @parameters γ=1 / 14 R0=5
@@ -99,23 +99,23 @@ plot(sol, leg = :topright)
 
 ```@example scenario1
 (C, sys) = make_statified_model((3k, 2k, 1k))
-prob = ODEProblem(sys, [], (0, tf), ps)
+prob = ODEProblem(sys, [], (0, tf))
 sol = solve(prob)
 plt1 = plot(sol, leg = :topright, title = "i")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> contact_matrix)])
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> contact_matrix))
 sol = solve(prob)
 plt2 = plot(sol, leg = :topright, title = "ii")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> Diagonal(contact_matrix))])
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> Diagonal(contact_matrix)))
 sol = solve(prob)
 plt3 = plot(sol, leg = :topright, title = "iii")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> 0.5 * contact_matrix)])
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> 0.5 * contact_matrix))
 sol = solve(prob)
 plt4 = plot(sol, leg = :topright, title = "iv")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> scaling * contact_matrix)])
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> scaling * contact_matrix))
 sol = solve(prob)
 plt5 = plot(sol, leg = :topright, title = "v")
 plot(plt1, plt2, plt3, plt4, plt5, size = (1000, 500))
@@ -124,32 +124,24 @@ plot(plt1, plt2, plt3, plt4, plt5, size = (1000, 500))
 > Repeat 1.a for an older-skewing population: `N_young = 1k, N_middle = 2k, N_old = 3k`
 
 ```@example scenario1
-ps = Pair[]
-pop = (1k, 2k, 3k)
-for i in 1:n_stratify
-    nn = pop[i]
-    push!(ps, Ns[i] => nn)
-    push!(ps, Ss[i] => nn - 1)
-    push!(ps, Is[i] => 1)
-    push!(ps, Rs[i] => 0)
-end
-prob = ODEProblem(sys, [], (0, tf), ps)
+(C, sys) = make_statified_model((1k, 2k, 3k))
+prob = ODEProblem(sys, [], (0, tf))
 sol = solve(prob)
 plt1 = plot(sol, leg = :topright, title = "i")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> contact_matrix)])
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> contact_matrix))
 sol = solve(prob)
 plt2 = plot(sol, leg = :topright, title = "ii")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> Diagonal(contact_matrix))])
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> Diagonal(contact_matrix)))
 sol = solve(prob)
 plt3 = plot(sol, leg = :topright, title = "iii")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> 0.5 * contact_matrix)])
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> 0.5 * contact_matrix))
 sol = solve(prob)
 plt4 = plot(sol, leg = :topright, title = "iv")
 
-prob = ODEProblem(sys, [], (0, tf), [ps; vec(C .=> scaling * contact_matrix)])
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> scaling * contact_matrix))
 sol = solve(prob)
 plt5 = plot(sol, leg = :topright, title = "v")
 plot(plt1, plt2, plt3, plt4, plt5, size = (1000, 500))
@@ -219,7 +211,7 @@ plot(sol, leg = :topright)
 > Prem et al Supplementary info, page 20
 
 ```@example scenario1
-function cm_school(xfs)
+function cm_school(xfs, country)
     to_cm(xfs[:home][country]) + to_cm(xfs[:work][country]) + to_cm(xfs[:other][country])
 end # no school
 
@@ -234,7 +226,7 @@ plot(sol, leg = :topright)
 > Prem et al sets social distancing to reduce contacts by half
 
 ```@example scenario1
-function cm_social_dist(xfs)
+function cm_social_dist(xfs, country)
     to_cm(xfs[:home][country]) + 0.5 * to_cm(xfs[:work][country]) +
     0.5 * to_cm(xfs[:school][country]) + 0.5 * to_cm(xfs[:other][country])
 end
