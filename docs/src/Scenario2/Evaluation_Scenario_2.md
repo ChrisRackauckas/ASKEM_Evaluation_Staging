@@ -3,6 +3,7 @@
 ## Question 1
 
 This reads in the SIDARTHE model from a JSON formed from Semagrams.
+
 ```@example scenario2
 sidarthe = read_json_acset(LabelledPetriNet,"sidarthe.json")
 sys_sidarthe = ODESystem(sidarthe)
@@ -269,7 +270,9 @@ new_o = add_output!(sidarthe_v,new_t,new_s)
 
 mca_sidarthe_v = mca(sidarthe,sidarthe_v)
 AlgebraicPetri.Graph(mca_sidarthe_v[1])
+```
 
+```@example scenario2
 sidarthe_sub = Subobject(
   sidarthe_v,
   S=parts(sidarthe, :S),
@@ -278,6 +281,9 @@ sidarthe_sub = Subobject(
   O=parts(sidarthe, :O)
 )
 AlgebraicPetri.Graph(dom(hom(negate(sidarthe_sub))))
+```
+
+```@example scenario2
 sys_sidarthe_v = ODESystem(sidarthe_v)
 ```
 
