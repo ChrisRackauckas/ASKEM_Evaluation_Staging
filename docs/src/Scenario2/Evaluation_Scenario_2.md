@@ -69,6 +69,11 @@ xmax, xmaxval = get_max_t(probne, sum(idart))
 
 > Now update the parameters to reflect various interventions that Italy implemented during the first wave, as described in detail on pg. 9.  Simulate for 100 days, reproduce the trajectories in Fig. 2B, and determine the day and level of peak total infections (sum over all the infected states I, D, A, R, T). Expected output: Trajectories in Fig. 2B, peak occurs around day 50, with ~0.2% of the total population infected.
 
+This unit test was a straightforward implementation of the scenario, requiring a named reparameterization. It makes use of the new
+ModelingToolkit feature designed for ASKEM, `remake(prob, u0 = u0s, p = pars)`, which allows for a new ODE to be generated from the
+old ODE simply by mentioning which parameters need to be changed (all others are kept constant). The approximation tests on the
+bottom demonstrate that the results in Fig 2B are obtained.
+
 ```@example scenario2
 ITALY_POPULATION = 60e6
 u0s = [
@@ -109,6 +114,11 @@ xmax, xmaxval = get_max_t(prob_test1, sum(idart))
 
 > The difference between 1.b.i and 1.b.ii are changes in some parameter values over time. Describe the difference in outcomes between b.i and b.ii. Perform a sensitivity analysis to understand the sensitivity of the model to parameter variations and determine which parameter(s) were most responsible for the change in outcomes.
 
+This analysis was a straightforward application of the `get_sensitivity` function in EasyModelAnalysis. The only issue was the creation
+of the bounds for the parameters, which was not given by the metadata from TA1/TA2. Thus we made a modeling choice that the viable
+parameter set is 50% below and 100% above the starting parameter choice. Future iterations of the modeling platform should preserve
+parameter bound data which would make this a one line analysis.
+
 ```@example scenario2
 pbounds = [param => [
                0.5 * ModelingToolkit.defaults(sys)[param],
@@ -124,6 +134,20 @@ create_sensitivity_plot(prob, 100.0, Infected, pbounds; samples = 200)
 ### Mininmum Parameter Threshold
 
 > Now return to the situation in b.i (constant parameters that don’t change over time). Let’s say we want to increase testing, diagnostics, and contact tracing efforts (implemented by increasing the detection parameters ε and θ). Assume that θ >= 2* ε, because a symptomatic person is more likely to be tested. What minimum constant values do these parameters need to be over the course of a 100-day simulation, to ensure that the total infected population (sum over all the infected states I, D, A, R, T) never rises above 1/3 of the total population?
+
+This scenario demonstrates the 
+[lazily defined observables](https://sciml.github.io/EasyModelAnalysis.jl/dev/getting_started/#Lazily-Defining-Observables) 
+functionality that persists throughout our simulation and analysis libraries. When one solves an equation with ModelingToolkit
+symbolic values, `sol[x]` gives the solution with respect to `x` by name. While that improves code legibility, `sol[x+y]` is
+also allowed, and will automatically generate the solution of `x(t) + y(t)` on demand. Since this functionality is directly
+handled by the solution representation, this means that all functions built on the solution have this functionality. Thus
+without having to make any other changes, we can change our minimization to the complex form
+`(Infected + Diagnosed + Ailing + Recognized + Threatened) / sum(states(sys))` required by the scenario.
+
+However, this scenario also required making a modeling choice. In order to perform this minimization we needed, we needed
+to define the comparative cost between the different intervention parameters, `eta` and `theta`. We have made the assumption
+that the cost of interventions on these two parameters are the same, and have made requests to TA1/TA2 about the interpretation
+of these parameters for further information.
 
 ```@example scenario2
 threshold_observable = (Infected + Diagnosed + Ailing + Recognized + Threatened) /
@@ -143,6 +167,9 @@ EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, threshold_o
 ## Question 2
 
 ### Ingest SIDARTHE-V
+
+This is a handwritten verison of the SIDARTHE-V model, built from the exported SIDARTHE SBML and then manually handcorrected to be
+the SIDARTHE-V model. This should swap to the TA1/TA2 model form when available.
 
 ```@example scenario2
 sysv = eval(quote
@@ -274,6 +301,11 @@ xmax, xmaxval = get_max_t(probv, sum(idart))
 ### b.i
 
 > Let’s say our goal is to ensure that the total infected population (sum over all the infected states I, D, A, R, T) never rises above 1/3 of the total population, over the course of the next 100 days. If you could choose only a single intervention (affecting only one parameter), which intervention would let us meet our goal, with minimal change to the intervention parameter? Assume that the intervention will be implemented after one month (t = day 30), and will stay constant after that, over the remaining time period (i.e. the following 70 days). What are equivalent interventions of the other two intervention types, that would have the same impact on total infections?
+
+This is a straightforward usage of the `EasyModelAnalysis.optimal_parameter_intervention_for_threshold` function designed during
+the ASKEM hackathon. It was able to be used without modification. However, a modeling decision had to be made to define
+what the "intervention parameters" are. A data request back to TA1/TA2 has been made to define which parameters should be in this
+set.
 
 ```@example scenario2
 intervention_parameters = [theta] # Need to figure out what these should be
