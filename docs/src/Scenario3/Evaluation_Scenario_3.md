@@ -110,6 +110,20 @@ This looks very good and matches the original data, confirming that the inverse 
 
 ## Question 2: Add Hospitalizations and Deaths
 
+This expands the original SIR model to explore a model space comprising SIRD, SIRH, and SIRHD.
+```@example evalscenario3
+sird = read_json_acset(LabelledPetriNet,"sird.json")
+sirh = read_json_acset(LabelledPetriNet,"sirh.json")
+sirhd = read_json_acset(LabelledPetriNet,"sirhd.json")
+sirhd_sys = ODESystem(sirhd)
+tspan = (0.0, 40.0)
+u0 = [990, 10, 0, 0, 0]
+p = [0.01*10/1000, 0.25, 0.1, 0.1, 0.1, 0.1]
+sirhd_prob = ODEProblem(sirhd_sys, u0, tspan, p)
+sirhd_sol = solve(sirhd_prob)
+plot(sirhd_sol)
+```
+
 Question 2 involves doing the same analysis as question one but on the SIR model with hopsitalizations and deaths included.
 To establish unit tests, we first showcase building the model and solving inverse problems using the ModelingToolkit version
 of the model.
@@ -195,6 +209,11 @@ norm(solve(_prob2, saveat = t_test)[R] - data_test[3][2])
 
 ## Question 3: Add Vaccinations
 
+This expands the previous SIRHD model to add vaccination.
+```@example evalscenario3
+sirhd_vax = read_json_acset(LabelledPetriNet,"sirhd_vax.json")
+```
+
 Question 3 is the same analysis as questions 1 and 2 done on a model with vaccination added. In order to build unit tests for
 the analysis and functionality, we started by building the model with vaccine by hand, awaiting a swap to the version from
 TA2.
@@ -238,6 +257,11 @@ The unit test analysis code is as follows:
 
 ## Question 4: Age-Stratified Model
 
+This expands the previous SIRHD-Vax model to stratify by age.
+```@example evalscenario3
+sirhd_vax_age16 = read_json_acset(LabelledPetriNet,"sirhd_vax_age16.json")
+```
+
 Question 4 is the same analysis as questions 1, 2, and 3 on a model with age-stratification added. In order to build unit tests for
 the analysis and functionality, we started by building the model with vaccine by hand, awaiting a swap to the version from
 TA2.
@@ -251,6 +275,13 @@ TA2.
 * Aggregated contact matrix for beta over age, from Scenario 1
 
 ## Question 5: Add Reinfection
+
+This expands the previous SIRHD model to add reinfection, and restratifies with vaccination and age.
+```@example evalscenario3
+sirhd_renew = read_json_acset(LabelledPetriNet,"sirhd_renew.json")
+sirhd_renew_vax = read_json_acset(LabelledPetriNet,"sirhd_renew_vax.json")
+sirhd_renew_vax_age16 = read_json_acset(LabelledPetriNet,"sirhd_renew_vax_age16.json")
+```
 
 Question 5 is the same analysis as questions 1, 2, 3, and 4 on a model with reinfection added. In order to build unit tests for
 the analysis and functionality, we started by building the model with vaccine by hand, awaiting a swap to the version from
