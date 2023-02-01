@@ -2,6 +2,15 @@
 
 ## Question 1
 
+This reads in the SIDARTHE model from a JSON formed from Semagrams.
+
+```@example scenario2
+using Catlab, AlgebraicPetri, Catlab.CategoricalAlgebra, ModelingToolkit
+import AlgebraicPetri.SubACSets
+sidarthe = read_json_acset(LabelledPetriNet,"sidarthe.json")
+sys_sidarthe = ODESystem(sidarthe)
+```
+
 ### Ingest SIDARTHE
 
 This is the version directly from the SBML file. This will be replaced with a version from TA1/TA2 when available. This used our
@@ -21,7 +30,7 @@ myread(fn) = readSBML(fn, doc -> begin
 m = myread(fn)
 rn = ReactionSystem(m)
 sys = convert(ODESystem, rn)
-eqs = equations(sys)
+eqs = ModelingToolkit.equations(sys)
 defs_ = ModelingToolkit.defaults(sys)
 defs = deepcopy(defs_)
 evs = ModelingToolkit.get_continuous_events(sys)
@@ -94,7 +103,7 @@ p = plot(solne, vars = idart)
 ```
 
 ```@example scenario2
-p = plot(solne.t, solne[sum(idart)])
+p = plot(solne, idxs = [sum(idart)], lab = "total infected")
 ```
 
 #### Unit Test 2
@@ -203,7 +212,7 @@ sort(filter(x -> endswith(string(x[1]), "_total_order"), sensres_vec), by = x ->
 ```
 
 ```@example scenario2
-create_sensitivity_plot(sensres, pbounds)
+create_sensitivity_plot(sensres, pbounds, true, ylims = (-0.2, 1.0), size=(800, 800))
 ```
 
 ### Minimum Parameter Threshold
@@ -253,7 +262,55 @@ opt_p
 plot(sol_opt_p, idxs = [threshold_observable], lab = "total infected", leg = :topright)
 ```
 
+```@example scenario2
+params = map(t -> ModelingToolkit.defaults(sys)[eval(:(@nonamespace sys.$(Symbol(chop(string(t); head=1, tail=0)))))], sidarthe[:,:tname])
+
+name_mapping = Dict(s => only(filter(n -> string(n)[1] == string(s)[1], long_names)) for s in sidarthe[:,:sname])
+
+inits = map(s -> ModelingToolkit.defaults(sys)[eval(:(@nonamespace sys.$(name_mapping[s])))], sidarthe[:,:sname])
+
+paramd_sidarthe = LabelledReactionNet{Float64, Float64}(sidarthe, zip(sidarthe[:,:sname], inits), zip(sidarthe[:,:tname], params))
+
+prob = ODEProblem(paramd_sidarthe)
+sol = solve(prob, Tsit5())
+plot(sol)
+```
+
 ## Question 2
+
+This forms SIDARTHE-V by manually adding the V state and vax transition. It compares the models via maximum common subacset, plotting the common subgraph (the original SIDARTHE), the negation (the new transition and vax state), and the complement (the new transition from susceptible to vax).
+
+```@example scenario2
+import Graphviz_jll
+sidarthe_v = deepcopy(sidarthe)
+new_s = add_species!(sidarthe_v;sname=:V)
+new_t = add_transition!(sidarthe_v;tname=:vax)
+new_i = add_input!(sidarthe_v,new_t,1)
+new_o = add_output!(sidarthe_v,new_t,new_s)
+
+mca_sidarthe_v = mca(sidarthe,sidarthe_v)
+AlgebraicPetri.Graph(mca_sidarthe_v[1])
+```
+
+```@example scenario2
+sidarthe_sub = Subobject(
+  sidarthe_v,
+  S=parts(sidarthe, :S),
+  T=parts(sidarthe, :T),
+  I=parts(sidarthe, :I),
+  O=parts(sidarthe, :O)
+)
+AlgebraicPetri.Graph(dom(hom(negate(sidarthe_sub))))
+```
+
+```@example scenario2
+AlgebraicPetri.Graph(dom(hom(~(sidarthe_sub))))
+```
+
+```@example scenario2
+sys_sidarthe_v = ODESystem(sidarthe_v)
+```
+
 
 ### Ingest SIDARTHE-V
 
