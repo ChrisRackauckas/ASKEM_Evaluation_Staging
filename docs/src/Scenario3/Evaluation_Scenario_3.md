@@ -112,6 +112,7 @@ This looks very good and matches the original data, confirming that the inverse 
 
 This expands the original SIR model to explore a model space comprising SIRD, SIRH, and SIRHD.
 ```@example evalscenario3
+using Catlab.CategoricalAlgebra
 sird = read_json_acset(LabelledPetriNet,"sird.json")
 sirh = read_json_acset(LabelledPetriNet,"sirh.json")
 sirhd = read_json_acset(LabelledPetriNet,"sirhd.json")
