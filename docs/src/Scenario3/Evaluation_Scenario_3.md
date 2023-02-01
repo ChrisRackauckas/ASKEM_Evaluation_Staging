@@ -330,8 +330,26 @@ norm(solve(_prob2, saveat = t_test)[D] - data_test[5][2])
 
 This expands the previous SIRHD model to add vaccination.
 ```@example evalscenario3
+using ModelingToolkit.Symbolics: variable
+using ModelingToolkit: toparam
 sirhd_vax = read_json_acset(LabelledPetriNet, "sirhd_vax.json")
 sirhd_vax_sys = structural_simplify(ODESystem(sirhd_vax))
+sirhd_vax_sys = complete(sirhd_vax_sys)
+names = string.(ModelingToolkit.getname.(states(sirhd_vax_sys)))
+sts_names = Symbol.(getindex.(names, 6), :_, getindex.(names, 11))
+@variables t
+sts = map(n->variable(n, T = SymbolicUtils.FnType)(t), sts_names)
+names = split.(string.(parameters(sirhd_vax_sys)), "\"")
+ps_names = Symbol.(getindex.(split.(getindex.(names, 3), "\\"), 1), :_,
+                   getindex.(split.(getindex.(names, 5), "\\"), 1))
+ps = map(n->toparam(variable(n)), ps_names)
+subs = [
+    parameters(sirhd_vax_sys) .=> ps
+    states(sirhd_vax_sys) .=> sts
+]
+sirhd_vax_sys = substitute(sirhd_vax_sys, subs)
+@unpack S_U, I_U, R_U, H_U, D_U, S_V, I_V, R_V, H_V, D_V = sirhd_vax_sys
+@unpack id_vax, inf_infuu, inf_infuv, hosp_id, ideath_id, rec_id, hrec_id, death_id, inf_infvu, inf_infvv = sirhd_vax_sys
 ```
 
 Question 3 is the same analysis as questions 1 and 2 done on a model with vaccination added. In order to build unit tests for
@@ -363,12 +381,6 @@ eqs = [∂(S) ~ -β * c * I_total / N * S - v * Sv,
 sys3 = structural_simplify(sys3)
 ```
 
-The unit test analysis code is as follows:
-
-```@example evalscenario3
-prob3 = ODEProblem(sys3, [], tspan);
-```
-
 #### Data Asks
 
 * Time series of vaccinations
@@ -383,7 +395,7 @@ data_test = [(S+Sv) => N_total .- df_test.I .-  df_test.R .- df_test.H .-  df_te
               Sv => 0,
                 (I+Iv) => df_test.I, (R+Rv) => df_test.R, H => df_test.H_unvac, Hv => df_test.H_vac, D => df_test.D_unvac, Dv => df_test.D_vac]
 
-vac_rate = df_train.H_vac[1]/(df_train.H_vac[1]+df_train.H_unvac[1]) 
+vac_rate = df_train.H_vac[1]/(df_train.H_vac[1]+df_train.H_unvac[1])
 # 52% of hospitalizations are vaccinated, we do not have data for vaccination rates for other compartments,
 # so we assume that the vaccination rate is the same for all compartments.
 ```
