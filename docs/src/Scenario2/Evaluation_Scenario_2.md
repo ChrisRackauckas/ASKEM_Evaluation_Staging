@@ -5,7 +5,7 @@
 This reads in the SIDARTHE model from a JSON formed from Semagrams.
 
 ```@example scenario2
-using Catlab, AlgebraicPetri, Catlab.CategoricalAlgebra
+using Catlab, AlgebraicPetri, Catlab.CategoricalAlgebra, ModelingToolkit
 import AlgebraicPetri.SubACSets
 sidarthe = read_json_acset(LabelledPetriNet,"sidarthe.json")
 sys_sidarthe = ODESystem(sidarthe)
@@ -75,7 +75,7 @@ results of the unit test 1. A demonstration of this is as follows:
 
 ```@example scenario2
 sysne = ODESystem(eqs2, ModelingToolkit.get_iv(sys), states(sys), parameters(sys);
-                 defaults = defs, name = nameof(sys))
+                  defaults = defs, name = nameof(sys))
 ssysne = structural_simplify(sysne)
 probne = ODEProblem(ssysne, [], (0.0, 100.0))
 solne = solve(probne, Tsit5())
@@ -187,7 +187,7 @@ parameter bound data which would make this a one line analysis.
 A utility was added (https://github.com/SciML/EasyModelAnalysis.jl/pull/134) to make it so the sensitivity values did not need to
 be recreated for the plotting process. This was just a minor performance and "niceity" improvement. Polish.
 
-The sensitivity analysis needed 1000 samples, we reduced it to 200 due to memory limitations of our documentation building 
+The sensitivity analysis needed 1000 samples, we reduced it to 200 due to memory limitations of our documentation building
 compute server.
 
 ```@example scenario2
@@ -197,15 +197,18 @@ pbounds = [param => [
            ] for param in parameters(sys2)]
 sensres = get_sensitivity(probne, 100.0, Infected, pbounds; samples = 200)
 sensres_vec = collect(sensres)
-sort(filter(x->endswith(string(x[1]), "_first_order"), sensres_vec), by=x->abs(x[2]), rev = true)
+sort(filter(x -> endswith(string(x[1]), "_first_order"), sensres_vec), by = x -> abs(x[2]),
+     rev = true)
 ```
 
 ```@example scenario2
-sort(filter(x->endswith(string(x[1]), "_second_order"), sensres_vec), by=x->abs(x[2]), rev = true)
+sort(filter(x -> endswith(string(x[1]), "_second_order"), sensres_vec), by = x -> abs(x[2]),
+     rev = true)
 ```
 
 ```@example scenario2
-sort(filter(x->endswith(string(x[1]), "_total_order"), sensres_vec), by=x->abs(x[2]), rev = true)
+sort(filter(x -> endswith(string(x[1]), "_total_order"), sensres_vec), by = x -> abs(x[2]),
+     rev = true)
 ```
 
 ```@example scenario2
@@ -224,7 +227,7 @@ create_sensitivity_plot(sensres, pbounds)
 > population?
 
 This scenario demonstrates the
-[lazily defined observables](https://sciml.github.io/EasyModelAnalysis.jl/dev/getting_started/#Lazily-Defining-Observables) 
+[lazily defined observables](https://sciml.github.io/EasyModelAnalysis.jl/dev/getting_started/#Lazily-Defining-Observables)
 functionality that persists throughout our simulation and analysis libraries. When one solves an equation with ModelingToolkit
 symbolic values, `sol[x]` gives the solution with respect to `x` by name. While that improves code legibility, `sol[x+y]` is
 also allowed, and will automatically generate the solution of `x(t) + y(t)` on demand. Since this functionality is directly
@@ -233,30 +236,30 @@ without having to make any other changes, we can change our minimization to the 
 `(Infected + Diagnosed + Ailing + Recognized + Threatened) / sum(states(sys))` required by the scenario.
 
 However, this scenario also required making a modeling choice. In order to perform this minimization we needed, we needed
-to define the comparative cost between the different intervention parameters, `eta` and `theta`. We have made the assumption
+to define the comparative cost between the different intervention parameters, `epsilon` and `theta`. We have made the assumption
 that the cost of interventions on these two parameters are the same, and have made requests to TA1/TA2 about the interpretation
 of these parameters for further information.
 
 ```@example scenario2
 threshold_observable = (Infected + Diagnosed + Ailing + Recognized + Threatened) /
                        sum(states(sys))
-cost = -(eta + theta)
-ineq_cons = [2 * eta - theta]
+cost = -(epsilon + theta)
+ineq_cons = [2 * epsilon - theta]
 opt_p, sol_opt_p, ret = optimal_parameter_threshold(probne, threshold_observable,
-                                                               0.33,
-                                                               cost, [eta, theta],
-                                                               [0.0, 0.0],
-                                                               3 .* [
-                                                                   ModelingToolkit.defaults(sys)[eta],
-                                                                   ModelingToolkit.defaults(sys)[theta],
-                                                               ];
-                                                               maxtime = 60,
-                                                               ineq_cons);
+                                                    0.33,
+                                                    cost, [epsilon, theta],
+                                                    [0.0, 0.0],
+                                                    3 .* [
+                                                        ModelingToolkit.defaults(sys)[epsilon],
+                                                        ModelingToolkit.defaults(sys)[theta],
+                                                    ];
+                                                    maxtime = 60,
+                                                    ineq_cons);
 opt_p
 ```
 
 ```@example scenario2
-plot(sol_opt_p, idxs=[threshold_observable], lab="total infected", leg=:topright)
+plot(sol_opt_p, idxs = [threshold_observable], lab = "total infected", leg = :topright)
 ```
 
 ```@example scenario2
@@ -463,7 +466,8 @@ defs_v2[sysv.tau1] = defs[tau]
 defs_v2[sysv.tau] = defs[tau] / 3
 defs_v2[sysv.phi] = 0
 probv2 = remake(probv; p = defs_v2)
-plot(solve(probv2))
+solv2 = solve(probv2)
+plot(solv2)
 ```
 
 ### b.i
@@ -488,54 +492,81 @@ This example revealed a typo in our function (https://github.com/SciML/EasyModel
 ```@example scenario2
 threshold_observable = (Infected + Diagnosed + Ailing + Recognized + Threatened) /
                        sum(states(sysv))
-plot(solve(probv2), idxs=[threshold_observable], lab="total infected")
-hline!([1/3], lab="limit")
+plot(solv2, idxs = [threshold_observable], lab = "total infected")
+hline!([1 / 3], lab = "limit")
 ```
 
 ```@example scenario2
 intervention_p = phi # Need to figure out what these should be
 cost = intervention_p - defs_v2[intervention_p]
 opt_p, solv2_s, ret = optimal_parameter_intervention_for_threshold(probv2,
-                                                 threshold_observable,
-                                                 0.33,
-                                                 cost,
-                                                 [intervention_p], [0.0], [1.0],
-                                                 (30.0, 100.0);
-                                                 maxtime = 10);
+                                                                   threshold_observable,
+                                                                   0.33,
+                                                                   cost,
+                                                                   [intervention_p], [0.0],
+                                                                   [1.0],
+                                                                   (30.0, 100.0);
+                                                                   maxtime = 10);
 opt_p
 ```
+
 Note that the optimization solution is trivial, i.e. there's no intervention at
 all. This is expected because the model without any intervention would already
 have less than 1/3 of the population infected.
 
 ### b.ii
 
-> Let’s say our goal is to get the reproduction number R0 below 1.0, at some point within the next 100 days. Are there interventions that will allow us to meet our goal? If there are multiple options, which single intervention would have the greatest impact on R0 and let us meet our goal with minimal change to the intervention parameter? Assume that the intervention will be implemented after one month (t = day 30), and will stay constant after that, over the remaining time period (i.e. the following 70 days).
+> Let’s say our goal is to get the reproduction number R0 below 1.0, at some
+> point within the next 100 days. Are there interventions that will allow us to
+> meet our goal? If there are multiple options, which single intervention would
+> have the greatest impact on R0 and let us meet our goal with minimal change to
+> the intervention parameter? Assume that the intervention will be implemented
+> after one month (t = day 30), and will stay constant after that, over the
+> remaining time period (i.e. the following 70 days).
 
-In order to do this scenario a modeling decision for how to represent R0 in terms of the states was required. This needed expert
-information, which we called out for and documented the results in https://github.com/ChrisRackauckas/ASKEM_Evaluation_Staging/issues/20.
-This led us to a definition of the instantanious R0 as defined in https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7325187/. Thus using this
-definition of R0 and our intervention functionality designed to find parameters to keep a value below a threshold, we were able to
-solve for the intervention.
+In order to do this scenario a modeling decision for how to represent R0 in
+terms of the states was required. This needed expert information, which we
+called out for and documented the results in https:
+//github.com/ChrisRackauckas/ASKEM_Evaluation_Staging/issues/20. This led us to
+a definition of the instantanious R0 as defined in https:
+//www.ncbi.nlm.nih.gov/pmc/articles/PMC7325187/ equation 1. However, the R
+computation requires the mean duration of infectiousness, we will use `D=20` for
+now to have a non-trivial optimization. Thus using this definition of R0 and our
+intervention functionality designed to find parameters to keep a value below a
+threshold, we were able to solve for the intervention.
 
 Another modeling decision required here was the definition of intervention parameters, which we decided to use the same parameters
 as b.i.
 
 ```@example scenario2
-R0 = Infected # how is R0 defined from the states?
+D = 20
+R0 = sysv.alpha * sysv.Susceptible * D # double check
+plot(solv2, idxs = [R0])
 ```
 
 ```@example scenario2
-intervention_parameters = [theta] # Need to figure out what these should be
-res = [p => EasyModelAnalysis.optimal_parameter_intervention_for_threshold(prob, R0, 1.0,
-                                                                     p -
-                                                                     ModelingToolkit.defaults(sys)[p],
-                                                                     [p], [0.0],
-                                                                     3 .* [
-                                                                         ModelingToolkit.defaults(sys)[p],
-                                                                     ],
-                                                                     (30.0, 100.0);
-                                                                     maxtime = 60)
- for p in intervention_parameters]
-res[1][1]
+intervention_parameters = [sysv.theta => (2 * defs_v2[sysv.eta], 1) # 𝜃 >= 2 * 𝜀
+                           sysv.eta => (0, defs_v2[sysv.theta] / 2)
+                           sysv.phi => (0, 1)]
+opt_results = map(intervention_parameters) do (intervention_p, bounds)
+    cost = intervention_p - defs_v2[intervention_p]
+    optimal_parameter_intervention_for_reach(probv2,
+                                             R0,
+                                             1.0,
+                                             cost,
+                                             [intervention_p], [bounds[1]], [bounds[2]],
+                                             (30.0, 100.0);
+                                             maxtime = 10)
+end;
+map(first, opt_results)
+```
+
+```@example scenario2
+plts = map(opt_results) do opt_result
+    title = only(collect(opt_result[1]))
+    title = title[1] => round(title[2], sigdigits = 3)
+    plot(opt_result[2][2]; idxs = [R0], lab = "R0", title)
+    hline!([1], lab = "limit")
+end
+plot(plts...)
 ```

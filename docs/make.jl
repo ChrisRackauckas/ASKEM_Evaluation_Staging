@@ -35,7 +35,7 @@ makedocs(sitename = "DARPA-ASKEM Evaluation",
                                   assets = ["assets/favicon.ico"],
                                   mathengine = mathengine),
          pages = [
-             "DARPA-ASKEM Evalution" => "index.md",
+             "DARPA-ASKEM Evaluation" => "index.md",
              "Scenario1/Evaluation_Scenario_1.md",
              "Scenario2/Evaluation_Scenario_2.md",
              "Scenario3/Evaluation_Scenario_3.md",
