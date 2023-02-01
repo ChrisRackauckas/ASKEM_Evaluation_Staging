@@ -95,16 +95,17 @@ function LogNormalPrior(mean, variance)
     LogNormal(μ, σ)
 end
 
-function create_priors(C_mean, var)
-    c_priors = UnivariateDistribution[]
+function create_priors(prob, C_mean, var)
+    c_priors = []
+    params = parameters(prob.f.sys)
     for (i,c) in enumerate(C_mean)
         if C_mean[i] > 0
-            push!(c_priors, LogNormalPrior(C_mean[i], var))
+            push!(c_priors, params[i] => LogNormalPrior(C_mean[i], var))
         else
-            push!(c_priors, Normal(C_mean[i], 0.0))
+            push!(c_priors, params[i] => Normal(C_mean[i], 0.0))
         end
     end
-    vcat(c_priors, [LogNormalPrior(0.07, var)])
+    vcat(c_priors, [params[end] => LogNormalPrior(0.07, var)])
 end
 ```
 
@@ -129,10 +130,11 @@ plot(sol, leg = :topright)
 ```@example scenario1
 _p = []
 for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
-    param_priors = create_priors(fill(1 / 3, (3, 3)), var)
-    push!(_p, plot_uncertainty_forecast(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50))
+    pltkwargs = i == 5 ? (;seriescolor = [:red :green :blue], label = ["Infected Young" "Infected Middle" "Infected Old"]) : (;seriescolor = [:red :green :blue])
+    param_priors = create_priors(prob, fill(1 / 3, (3, 3)), var)
+    push!(_p, plot_uncertainty_forecast_quantiles(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50; pltkwargs...))
 end
-plot(_p..., layout = (1, 5), size = (1200, 300), plot_title = "Infected with varying priors")
+plot(_p..., layout = (1, 5), size = (1600, 300), plot_title = "Infected with varying priors", legend = :outerright)
 ```
 
 > ii. Simulate this model for the case where there is significant in-group contact
@@ -160,10 +162,11 @@ plt_a2 = plot(sol, leg = :topright)
 ```@example scenario1
 _p = []
 for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
-    param_priors = create_priors(contact_matrix, var)
-    push!(_p, plot_uncertainty_forecast(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50))
+    pltkwargs = i == 5 ? (;seriescolor = [:red :green :blue], label = ["Infected Young" "Infected Middle" "Infected Old"]) : (;seriescolor = [:red :green :blue])
+    param_priors = create_priors(prob, contact_matrix, var)
+    push!(_p, plot_uncertainty_forecast_quantiles(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50; pltkwargs...))
 end
-plot(_p..., layout = (1, 5), size = (1200, 300), plot_title = "Infected with varying priors")
+plot(_p..., layout = (1, 5), size = (1600, 300), plot_title = "Infected with varying priors", legend = :outerright)
 ```
 
 > iii. Simulate this model for the case where there is no contact between age groups.
@@ -179,10 +182,11 @@ plt_a3 = plot(sol, leg = :topright)
 ```@example scenario1
 _p = []
 for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
-    param_priors = create_priors(Diagonal(contact_matrix), var)
-    push!(_p, plot_uncertainty_forecast(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50))
+    pltkwargs = i == 5 ? (;seriescolor = [:red :green :blue], label = ["Infected Young" "Infected Middle" "Infected Old"]) : (;seriescolor = [:red :green :blue])
+    param_priors = create_priors(prob, Diagonal(contact_matrix), var)
+    push!(_p, plot_uncertainty_forecast_quantiles(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50; pltkwargs...))
 end
-plot(_p..., layout = (1, 5), size = (1200, 300), plot_title = "Infected with varying priors")
+plot(_p..., layout = (1, 5), size = (1600, 300), plot_title = "Infected with varying priors", legend = :outerright)
 ```
 
 > Simulate social distancing by scaling down the uniform contact matrix by a
@@ -190,7 +194,8 @@ plot(_p..., layout = (1, 5), size = (1200, 300), plot_title = "Infected with var
 
 ```@example scenario1
 uniform_matrix = fill(0.33, (3, 3))
-sol = solve(scenario1([2k, 2k, 2k], 0.5 * uniform_matrix, numinfected = 1))
+prob = scenario1([2k, 2k, 2k], 0.5 * uniform_matrix, numinfected = 1)
+sol = solve(prob)
 plt_a4 = plot(sol, leg = :topright)
 ```
 
@@ -198,10 +203,11 @@ plt_a4 = plot(sol, leg = :topright)
 ```@example scenario1
 _p = []
 for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
-    param_priors = create_priors(0.5 * uniform_matrix, var)
-    push!(_p, plot_uncertainty_forecast(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50))
+    pltkwargs = i == 5 ? (;seriescolor = [:red :green :blue], label = ["Infected Young" "Infected Middle" "Infected Old"]) : (;seriescolor = [:red :green :blue])
+    param_priors = create_priors(prob, 0.5 .* (contact_matrix), var)
+    push!(_p, plot_uncertainty_forecast_quantiles(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50; pltkwargs...))
 end
-plot(_p..., layout = (1, 5), size = (1200, 300), plot_title = "Infected with varying priors")
+plot(_p..., layout = (1, 5), size = (1600, 300), plot_title = "Infected with varying priors", legend = :outerright)
 ```
 
 > Repeat 1.a.iv for the scenario where the young population has poor compliance
