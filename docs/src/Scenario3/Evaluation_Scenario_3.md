@@ -2,6 +2,8 @@
 
 ```@example evalscenario3
 using EasyModelAnalysis, LinearAlgebra
+using Catlab, AlgebraicPetri
+using Catlab.CategoricalAlgebra
 ```
 
 ## Question 1
@@ -17,46 +19,17 @@ and wrote an entire repository of tutorials for this software. It is found at ht
 In there is an SIR without vital dynamics which we took in full.
 
 ```@example evalscenario3
-@parameters t β=0.05 c=10.0 γ=0.25
-@variables S(t)=990.0 I(t)=10.0 R(t)=0.0
-∂ = Differential(t)
-N = S + I + R # This is recognized as a derived variable
-eqs = [∂(S) ~ -β * c * I / N * S,
-    ∂(I) ~ β * c * I / N * S - γ * I,
-    ∂(R) ~ γ * I];
-
-@named sys = ODESystem(eqs);
-```
-
-```@example evalscenario3
+sir = read_json_acset(LabelledPetriNet, "sir.json")
+sys = ODESystem(sir)
 tspan = (0.0, 40.0)
-prob = ODEProblem(sys, [], tspan);
+u0 = [990, 10, 0]
+p = [0.05*10/1000, 0.25]
+prob = ODEProblem(sys, u0, tspan, p);
 sol = solve(prob);
 ```
 
 ```@example evalscenario3
 plot(sol)
-```
-
-```@example evalscenario3
-using Catlab, AlgebraicPetri
-sir = LabelledPetriNet([:S, :I, :R],
-  :inf => ((:S, :I)=>(:I, :I)),
-  :rec => (:I=>:R),
-)
-sir_sys = ODESystem(sir)
-```
-
-```@example evalscenario3
-tspan = (0.0, 40.0)
-u0 = [990, 10, 0]
-p = [0.05*10/1000, 0.25]
-sir_prob = ODEProblem(sir_sys, u0, tspan, p);
-sir_sol = solve(sir_prob);
-```
-
-```@example evalscenario3
-plot(sir_sol)
 ```
 
 ### Perform Model Calibration
@@ -112,7 +85,6 @@ This looks very good and matches the original data, confirming that the inverse 
 
 This expands the original SIR model to explore a model space comprising SIRD, SIRH, and SIRHD.
 ```@example evalscenario3
-using Catlab.CategoricalAlgebra
 sird = read_json_acset(LabelledPetriNet,"sird.json")
 sirh = read_json_acset(LabelledPetriNet,"sirh.json")
 sirhd = read_json_acset(LabelledPetriNet,"sirhd.json")
@@ -129,33 +101,10 @@ Question 2 involves doing the same analysis as question one but on the SIR model
 To establish unit tests, we first showcase building the model and solving inverse problems using the ModelingToolkit version
 of the model.
 
-```@example evalscenario3
-@parameters t β=0.1 c=10.0 γ=0.25 ρ=0.1 h=0.1 d=0.1 r=0.1
-@variables S(t)=990.0 I(t)=10.0 R(t)=0.0 H(t)=0.0 D(t)=0.0
-∂ = Differential(t)
-N = S + I + R + H + D # This is recognized as a derived variable
-eqs = [∂(S) ~ -β * c * I / N * S,
-    ∂(I) ~ β * c * I / N * S - γ * I - h * I - ρ * I,
-    ∂(R) ~ γ * I + r * H,
-    ∂(H) ~ h * I - r * H - d * H,
-    ∂(D) ~ ρ * I + d * H];
-
-@named sys2 = ODESystem(eqs);
-```
-
-```@example evalscenario3
-prob2 = ODEProblem(sys2, [], tspan);
-sol = solve(prob2);
-```
-
-```@example evalscenario3
-plot(sol)
-```
-
 The inverse problem solving is done via the same functionality as before.
 
 ```@example evalscenario3
-fitparams2 = global_datafit(prob2, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
+fitparams2 = global_datafit(sirhd_prob, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
                             t_train, data_train)
 ```
 
@@ -163,8 +112,8 @@ Notice that this fit is not as good. That is to be expected because it's fitting
 SIR model's output data. Thus we should expect that it also does not forecast entirely correctly.
 
 ```@example evalscenario3
-_prob2 = remake(prob2, p = fitparams2)
-sol = solve(_prob2, saveat = t_test);
+sirhd_prob2 = remake(sirhd_prob, p = fitparams2)
+sol = solve(sirhd_prob2, saveat = t_test);
 plot(sol, idxs = S)
 plot!(t_test, data_test[1][2])
 ```
@@ -212,36 +161,13 @@ norm(solve(_prob2, saveat = t_test)[R] - data_test[3][2])
 
 This expands the previous SIRHD model to add vaccination.
 ```@example evalscenario3
-sirhd_vax = read_json_acset(LabelledPetriNet,"sirhd_vax.json")
+sirhd_vax = read_json_acset(LabelledPetriNet, "sirhd_vax.json")
+sirhd_vax_sys = structural_simplify(ODESystem(sirhd_vax))
 ```
 
 Question 3 is the same analysis as questions 1 and 2 done on a model with vaccination added. In order to build unit tests for
 the analysis and functionality, we started by building the model with vaccine by hand, awaiting a swap to the version from
 TA2.
-
-```@example evalscenario3
-@parameters t β=0.1 c=10.0 γ=0.25 ρ=0.1 h=0.1 d=0.1 r=0.1 v=0.1
-@parameters t β2=0.1 c2=10.0 ρ2=0.1 h2=0.1 d2=0.1 r2=0.1
-@variables S(t)=990.0 I(t)=10.0 R(t)=0.0 H(t)=0.0 D(t)=0.0
-@variables Sv(t)=990.0 Iv(t)=10.0 Rv(t)=0.0 Hv(t)=0.0 Dv(t)=0.0
-@variables I_total(t)
-
-∂ = Differential(t)
-N = S + I + R + H + D + Sv + Iv + Iv + Hv + Dv # This is recognized as a derived variable
-eqs = [∂(S) ~ -β * c * I_total / N * S - v * Sv,
-    ∂(I) ~ β * c * I_total / N * S - γ * I - h * I - ρ * I,
-    ∂(R) ~ γ * I + r * H,
-    ∂(H) ~ h * I - r * H - d * H,
-    ∂(D) ~ ρ * I + d * H, ∂(Sv) ~ -β2 * c2 * I_total / N * Sv + v * Sv,
-    ∂(Iv) ~ β2 * c2 * I_total / N * Sv - γ * I - h2 * I - ρ2 * I,
-    ∂(Rv) ~ γ * I + r2 * H,
-    ∂(Hv) ~ h2 * I - r2 * H - d2 * H,
-    ∂(Dv) ~ ρ2 * I + d2 * H, I_total ~ I + Iv,
-];
-
-@named sys3 = ODESystem(eqs)
-sys3 = structural_simplify(sys3)
-```
 
 The unit test analysis code is as follows:
 
