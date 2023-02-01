@@ -17,6 +17,7 @@ using EasyModelAnalysis.ModelingToolkit: toparam
 using EasyModelAnalysis.ModelingToolkit.Symbolics: FnType, variables
 using XLSX, CSV, DataFrames, Plots
 using Catlab, Catlab.CategoricalAlgebra, Catlab.Programs, AlgebraicPetri, AlgebraicPetri.TypedPetri
+using Base: splat
 ```
 
 ## Stratified SIR
