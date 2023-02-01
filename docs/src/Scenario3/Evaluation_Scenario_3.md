@@ -1,7 +1,9 @@
 # Evaluation Scenario 3
 
 ```@example evalscenario3
-using EasyModelAnalysis, LinearAlgebra
+using EasyModelAnalysis, LinearAlgebra, CSV
+using Catlab, AlgebraicPetri
+using Catlab.CategoricalAlgebra
 ```
 
 ## Question 1
@@ -17,18 +19,22 @@ and wrote an entire repository of tutorials for this software. It is found at ht
 In there is an SIR without vital dynamics which we took in full.
 
 ```@example evalscenario3
-@parameters t β=0.05 c=10.0 γ=0.25
-@variables S(t)=990.0 I(t)=10.0 R(t)=0.0
-∂ = Differential(t)
-N = S + I + R # This is recognized as a derived variable
-eqs = [∂(S) ~ -β * c * I / N * S,
-    ∂(I) ~ β * c * I / N * S - γ * I,
-    ∂(R) ~ γ * I];
-
-@named sys = ODESystem(eqs);
-```
-
-```@example evalscenario3
+sir = read_json_acset(LabelledPetriNet, "sir.json")
+sys = ODESystem(sir)
+sys = complete(sys)
+@unpack S, I, R, inf, rec = sys
+@parameters N = 1
+param_sub = [
+    inf => inf / N
+]
+sys = substitute(sys, param_sub)
+defs = ModelingToolkit.defaults(sys)
+defs[S] = 990
+defs[I] = 10
+defs[R] = 0.0
+defs[N] = sum(x->defs[x], (S, I, R))
+defs[inf] = 0.5
+defs[rec] = 0.25
 tspan = (0.0, 40.0)
 prob = ODEProblem(sys, [], tspan);
 sol = solve(prob);
@@ -36,27 +42,6 @@ sol = solve(prob);
 
 ```@example evalscenario3
 plot(sol)
-```
-
-```@example evalscenario3
-using Catlab, AlgebraicPetri
-sir = LabelledPetriNet([:S, :I, :R],
-  :inf => ((:S, :I)=>(:I, :I)),
-  :rec => (:I=>:R),
-)
-sir_sys = ODESystem(sir)
-```
-
-```@example evalscenario3
-tspan = (0.0, 40.0)
-u0 = [990, 10, 0]
-p = [0.05*10/1000, 0.25]
-sir_prob = ODEProblem(sir_sys, u0, tspan, p);
-sir_sol = solve(sir_prob);
-```
-
-```@example evalscenario3
-plot(sir_sol)
 ```
 
 ### Perform Model Calibration
@@ -71,11 +56,12 @@ dataset = solve(prob, saveat = 0.1)
 t_train = dataset.t[1:201]
 t_test = dataset.t[202:end]
 data_train = [S => dataset[S][1:201], I => dataset[I][1:201], R => dataset[R][1:201]]
+
 data_test = [S => dataset[S][202:end], I => dataset[I][202:end], R => dataset[R][202:end]]
 ```
 
 ```@example evalscenario3
-fitparams = global_datafit(prob, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
+fitparams = global_datafit(prob, [inf => [0.2, 2.0], rec => [0.05, 0.5]],
                            t_train, data_train)
 ```
 
@@ -100,7 +86,78 @@ plot!(t_test, data_test[3][2])
 
 This looks very good and matches the original data, confirming that the inverse problem functionality is functional.
 
+Now we train on data from June 1 2021 to September 30 2021.
+
+
 #### Application to Real Data from TA1
+
+```@example evalscenario3
+using CSV, DataFrames, Downloads
+
+# Infectious/Recovered day by day:
+url = "https://raw.githubusercontent.com/DARPA-ASKEM/program-milestones/4ee24c6a268998148fc635b1e35088f4ebbbb7ce/6-month-milestone/evaluation/scenario_3/ta_4/usa-IRDVHN_age.csv"
+file = CSV.File(Downloads.download(url))
+df_raw = DataFrame(file)
+
+start_train = 171
+stop_train = 171+121
+start_test = 171+122
+stop_test = 171+122+92
+
+df_train = df_raw[start_train:stop_train, :]
+df_test = df_raw[start_test:stop_test, :]
+
+t_train = collect(0:(size(df_train, 1)-1))
+t_test = collect(0:(size(df_test, 1)-1))
+
+N_total = 334998398 # assumed to be constant from (https://github.com/DARPA-ASKEM/program-milestones/blob/main/6-month-milestone/evaluation/scenario_3/ta_1/usa-2021-population-age-stratified.csv)
+#S = N_total - R - I
+data_train = [S => N_total .- df_train.I .-  df_train.R, I => df_train.I, R => df_train.R]
+data_test = [S => N_total .- df_test.I .- df_test.R, I => df_test.I, R => df_test.R]
+
+u0s = [S => N_total - df_train.I[1] - df_train.R[1], I => df_train.I[1], R => df_train.R[1]]
+_prob = remake(prob, u0 = u0s, tspan = (t_train[1], t_train[end]), p = [N => N_total])
+
+fitparams = global_datafit(_prob, [inf => [0, 1.0], rec => [0.0, 1.0]], t_train, data_train)
+```
+
+```@example evalscenario3
+# Plot training fit
+_prob_train = remake(_prob, p = fitparams)
+sol = solve(_prob_train, saveat = t_train);
+
+cs = Plots.distinguishable_colors(10)[end-5:end]
+plot(sol, idxs = S, color = cs[1])
+plot!(t_train, data_train[1][2], lab = "S_train", color = cs[2])
+
+plot!(sol, idxs = I, color = cs[3])
+plot!(t_train, data_train[2][2], lab = "I_train", color = cs[4])
+
+plot!(sol, idxs = R, color = cs[5])
+p = plot!(t_train, data_train[3][2], lab = "R_train", color = cs[6], dpi=300)
+```
+```@example evalscenario3
+savefig(p, "train_fit_S3_Q1.png")
+```
+
+# Plot test fit
+```@example evalscenario3
+u0s = [S => N_total - df_test.I[1] - df_test.R[1], I => df_test.I[1], R => df_test.R[1]]
+_prob_test = remake(_prob, p = fitparams, u0=u0s, tspan = (t_test[1], t_test[end]))
+sol = solve(_prob_test, saveat = t_test);
+plot(sol, idxs = S, color = cs[1])
+plot!(t_test, data_test[1][2], lab = "S_test", color = cs[2])
+
+plot!(sol, idxs = I, color = cs[3])
+plot!(t_test, data_test[2][2], lab = "I_test", color = cs[4])
+
+plot!(sol, idxs = R, color = cs[5])
+p = plot!(t_test, data_test[3][2], lab = "R_test", color = cs[6], dpi=300)
+```
+```@example evalscenario3
+savefig(p, "test_fit_S3_Q1.png")
+```
+
 
 * Expect time series data on I + R
 * Start with an assumption on the recovery
@@ -110,37 +167,28 @@ This looks very good and matches the original data, confirming that the inverse 
 
 ## Question 2: Add Hospitalizations and Deaths
 
+This expands the original SIR model to explore a model space comprising SIRD, SIRH, and SIRHD.
+```@example evalscenario3
+sird = read_json_acset(LabelledPetriNet,"sird.json")
+sirh = read_json_acset(LabelledPetriNet,"sirh.json")
+sirhd = read_json_acset(LabelledPetriNet,"sirhd.json")
+sirhd_sys = ODESystem(sirhd)
+tspan = (0.0, 40.0)
+u0 = [990, 10, 0, 0, 0]
+p = [0.01*10/1000, 0.25, 0.1, 0.1, 0.1, 0.1]
+sirhd_prob = ODEProblem(sirhd_sys, u0, tspan, p)
+sirhd_sol = solve(sirhd_prob)
+plot(sirhd_sol)
+```
+
 Question 2 involves doing the same analysis as question one but on the SIR model with hopsitalizations and deaths included.
 To establish unit tests, we first showcase building the model and solving inverse problems using the ModelingToolkit version
 of the model.
 
-```@example evalscenario3
-@parameters t β=0.1 c=10.0 γ=0.25 ρ=0.1 h=0.1 d=0.1 r=0.1
-@variables S(t)=990.0 I(t)=10.0 R(t)=0.0 H(t)=0.0 D(t)=0.0
-∂ = Differential(t)
-N = S + I + R + H + D # This is recognized as a derived variable
-eqs = [∂(S) ~ -β * c * I / N * S,
-    ∂(I) ~ β * c * I / N * S - γ * I - h * I - ρ * I,
-    ∂(R) ~ γ * I + r * H,
-    ∂(H) ~ h * I - r * H - d * H,
-    ∂(D) ~ ρ * I + d * H];
-
-@named sys2 = ODESystem(eqs);
-```
-
-```@example evalscenario3
-prob2 = ODEProblem(sys2, [], tspan);
-sol = solve(prob2);
-```
-
-```@example evalscenario3
-plot(sol)
-```
-
 The inverse problem solving is done via the same functionality as before.
 
 ```@example evalscenario3
-fitparams2 = global_datafit(prob2, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
+fitparams2 = global_datafit(sirhd_prob, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
                             t_train, data_train)
 ```
 
@@ -148,8 +196,8 @@ Notice that this fit is not as good. That is to be expected because it's fitting
 SIR model's output data. Thus we should expect that it also does not forecast entirely correctly.
 
 ```@example evalscenario3
-_prob2 = remake(prob2, p = fitparams2)
-sol = solve(_prob2, saveat = t_test);
+sirhd_prob2 = remake(sirhd_prob, p = fitparams2)
+sol = solve(sirhd_prob2, saveat = t_test);
 plot(sol, idxs = S)
 plot!(t_test, data_test[1][2])
 ```
@@ -167,6 +215,60 @@ plot!(t_test, data_test[3][2])
 This checks out.
 
 #### Data Ask
+
+```@example evalscenario3
+data_train = [S => N_total .- df_train.I .-  df_train.R, I => df_train.I, R => df_train.R, H => df_train.H, D => df_train.D]
+data_test = [S => N_total .- df_test.I .- df_test.R, I => df_test.I, R => df_test.R, H => df_test.H, D => df_test.D]
+
+u0s = [S => N_total - df_train.I[1] - df_train.R[1], I => df_train.I[1], R => df_train.R[1], H => df_train.H[1], D => df_train.D[1]]
+_prob2 = remake(prob2, u0 = u0s, tspan = (t_train[1], t_train[end]))
+
+param_bounds = [
+    β => [0.0, 5.1]
+    c => [9.0, 13.0]
+    γ => [0.0, 5.0]
+    ρ => [0.0, 5.0]
+    h => [0.0, 5.0]
+    d => [0.0, 20.0]
+    r => [0.0, 20.0]
+]
+fitparams2 = global_datafit(_prob2, param_bounds,
+                            t_train, data_train, maxiters = 200_000) # These are not all the parameters, should add more.
+```
+```@example evalscenario3
+# Plot training fit
+_prob2_train = remake(_prob2, p = fitparams2)
+sol = solve(_prob2_train, saveat = t_train);
+
+plot(sol, idxs = S, color = cs[1])
+plot!(t_train, data_train[1][2], lab = "S_train", color = cs[2])
+
+plot!(sol, idxs = I, color = cs[3])
+plot!(t_train, data_train[2][2], lab = "I_train", color = cs[4])
+
+plot!(sol, idxs = R, color = cs[5])
+p = plot!(t_train, data_train[3][2], lab = "R_train", color = cs[6], dpi=300)
+```
+```@example evalscenario3
+savefig(p, "train_fit_S3_Q2.png")
+```
+```@example evalscenario3
+u0s = [S => N_total - df_test.I[1] - df_test.R[1], I => df_test.I[1], R => df_test.R[1]]
+_prob2 = remake(_prob2, p = fitparams, u0=u0s, tspan = (t_test[1], t_test[end]))
+sol = solve(_prob2, saveat = t_test);
+
+plot(sol, idxs = S, color = cs[1])
+plot!(t_test, data_test[1][2], lab = "S_test", color = cs[2])
+
+plot!(sol, idxs = I, color = cs[3])
+plot!(t_test, data_test[2][2], lab = "I_test", color = cs[4])
+
+plot!(sol, idxs = R, color = cs[5])
+p = plot!(t_test, data_test[3][2], lab = "R_test", color = cs[6], dpi=300)
+```
+```@example evalscenario3
+savefig(p, "test_fit_S3_Q2.png")
+```
 
 * Daily time series on number of patients admitted to the hospital all US
 * time series for mortality
@@ -190,38 +292,22 @@ norm(solve(_prob, saveat = t_test)[R] - data_test[3][2])
 ```@example evalscenario3
 norm(solve(_prob2, saveat = t_test)[S] - data_test[1][2]) +
 norm(solve(_prob2, saveat = t_test)[I] - data_test[2][2]) +
-norm(solve(_prob2, saveat = t_test)[R] - data_test[3][2])
+norm(solve(_prob2, saveat = t_test)[R] - data_test[3][2]) +
+norm(solve(_prob2, saveat = t_test)[H] - data_test[4][2]) +
+norm(solve(_prob2, saveat = t_test)[D] - data_test[5][2])
 ```
 
 ## Question 3: Add Vaccinations
 
+This expands the previous SIRHD model to add vaccination.
+```@example evalscenario3
+sirhd_vax = read_json_acset(LabelledPetriNet, "sirhd_vax.json")
+sirhd_vax_sys = structural_simplify(ODESystem(sirhd_vax))
+```
+
 Question 3 is the same analysis as questions 1 and 2 done on a model with vaccination added. In order to build unit tests for
 the analysis and functionality, we started by building the model with vaccine by hand, awaiting a swap to the version from
 TA2.
-
-```@example evalscenario3
-@parameters t β=0.1 c=10.0 γ=0.25 ρ=0.1 h=0.1 d=0.1 r=0.1 v=0.1
-@parameters t β2=0.1 c2=10.0 ρ2=0.1 h2=0.1 d2=0.1 r2=0.1
-@variables S(t)=990.0 I(t)=10.0 R(t)=0.0 H(t)=0.0 D(t)=0.0
-@variables Sv(t)=990.0 Iv(t)=10.0 Rv(t)=0.0 Hv(t)=0.0 Dv(t)=0.0
-@variables I_total(t)
-
-∂ = Differential(t)
-N = S + I + R + H + D + Sv + Iv + Iv + Hv + Dv # This is recognized as a derived variable
-eqs = [∂(S) ~ -β * c * I_total / N * S - v * Sv,
-    ∂(I) ~ β * c * I_total / N * S - γ * I - h * I - ρ * I,
-    ∂(R) ~ γ * I + r * H,
-    ∂(H) ~ h * I - r * H - d * H,
-    ∂(D) ~ ρ * I + d * H, ∂(Sv) ~ -β2 * c2 * I_total / N * Sv + v * Sv,
-    ∂(Iv) ~ β2 * c2 * I_total / N * Sv - γ * I - h2 * I - ρ2 * I,
-    ∂(Rv) ~ γ * I + r2 * H,
-    ∂(Hv) ~ h2 * I - r2 * H - d2 * H,
-    ∂(Dv) ~ ρ2 * I + d2 * H, I_total ~ I + Iv,
-];
-
-@named sys3 = ODESystem(eqs)
-sys3 = structural_simplify(sys3)
-```
 
 The unit test analysis code is as follows:
 
