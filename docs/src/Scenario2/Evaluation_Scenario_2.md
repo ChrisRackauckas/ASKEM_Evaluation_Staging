@@ -470,7 +470,16 @@ Another modeling decision required here was the definition of intervention param
 as b.i.
 
 ```@example scenario2
-R0 = Infected # how is R0 defined from the states?
+# TODO: double check. I am assuming our `tau` is `tau1` and `tau1` is `tau2`.
+@unpack alpha, beta, zeta, epsilon, eta, xi, lambda, rho, theta, mu, kappa, tau, tau1, sigma = sysv;
+r1 = epsilon + xi + lambda
+r2 = eta + rho
+r3 = theta + mu + kappa
+r4 = nu + xi + tau
+r5 = sigma + tau1
+R0 = (alpha + beta * epsilon / r2 + gamma * zeta / r3 + delta * ((eta * epsilon /
+(r2 * r4)) + (zeta * theta)/ (r3 * r4))) / r1
+plot(solv2, idxs = [R0])
 ```
 
 ```@example scenario2
