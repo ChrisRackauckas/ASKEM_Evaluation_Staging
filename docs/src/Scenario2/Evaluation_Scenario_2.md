@@ -278,9 +278,10 @@ plot(sol)
 
 ## Question 2
 
-This forms SIDARTHE-V by manually adding the V state and vax transition. It compares the models via maximum common subacset, plotting both the common subgraph (the original SIDARTHE) and the complement (the new transition).
+This forms SIDARTHE-V by manually adding the V state and vax transition. It compares the models via maximum common subacset, plotting the common subgraph (the original SIDARTHE), the negation (the new transition and vax state), and the complement (the new transition from susceptible to vax).
 
 ```@example scenario2
+import Graphviz_jll
 sidarthe_v = deepcopy(sidarthe)
 new_s = add_species!(sidarthe_v;sname=:V)
 new_t = add_transition!(sidarthe_v;tname=:vax)
@@ -300,6 +301,10 @@ sidarthe_sub = Subobject(
   O=parts(sidarthe, :O)
 )
 AlgebraicPetri.Graph(dom(hom(negate(sidarthe_sub))))
+```
+
+```@example scenario2
+AlgebraicPetri.Graph(dom(hom(~(sidarthe_sub))))
 ```
 
 ```@example scenario2
