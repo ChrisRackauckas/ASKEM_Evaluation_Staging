@@ -1,7 +1,7 @@
 # Evaluation Scenario 3
 
 ```@example evalscenario3
-using EasyModelAnalysis, LinearAlgebra
+using EasyModelAnalysis, LinearAlgebra, CSV
 ```
 
 ## Question 1
@@ -71,6 +71,7 @@ dataset = solve(prob, saveat = 0.1)
 t_train = dataset.t[1:201]
 t_test = dataset.t[202:end]
 data_train = [S => dataset[S][1:201], I => dataset[I][1:201], R => dataset[R][1:201]]
+
 data_test = [S => dataset[S][202:end], I => dataset[I][202:end], R => dataset[R][202:end]]
 ```
 
@@ -100,7 +101,58 @@ plot!(t_test, data_test[3][2])
 
 This looks very good and matches the original data, confirming that the inverse problem functionality is functional.
 
+Now we train on data from June 1 2021 to September 30 2021.
+
+
 #### Application to Real Data from TA1
+
+```@example evalscenario3
+using CSV, DataFrames
+
+url = "https://raw.githubusercontent.com/DARPA-ASKEM/program-milestones/4ee24c6a268998148fc635b1e35088f4ebbbb7ce/6-month-milestone/evaluation/scenario_3/ta_4/usa-IRDVHN_age.csv"
+file = CSV.File(Downloads.download(url))
+df_raw = DataFrame(file)
+
+dataset = solve(prob, saveat = 0.1)
+start_train = 171
+stop_train = 171+121
+start_test = 171+122
+stop_test = 171+122+92
+
+df = df_raw[start_train:stop_train, :]
+
+t_train = collect(start_train:stop_train)
+t_test = collect(start_test:stop_test)
+
+N_total = 334998398 # assumed to be constant from (https://github.com/DARPA-ASKEM/program-milestones/blob/main/6-month-milestone/evaluation/scenario_3/ta_1/usa-2021-population-age-stratified.csv)
+#S = N_total - R - I
+data_train = [S => N_total .- df_raw.I[start_train:stop_train] .-  df_raw.R[start_train:stop_train], I => df_raw.I[start_train:stop_train], R => df_raw.R[start_train:stop_train]]
+data_test = [S => N_total .- df_raw.I[start_test:stop_test] .- df_raw.R[start_test:stop_test], I => df_raw.I[start_test:stop_test], R => df_raw.R[start_test:stop_test]]
+
+u0s = [S => N_total - df_raw.I[start_train] - df_raw.R[start_train], I => df_raw.I[start_train], R => df_raw.R[start_train]]
+_prob = remake(prob, u0 = u0s, tspan = (start_train , stop_train))
+
+fitparams = global_datafit(prob, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
+                           t_train, data_train)
+```
+
+```@example evalscenario3
+# Plot training fit
+_prob = remake(_prob, p = fitparams)
+sol = solve(_prob, saveat = t_train);
+plot(sol, idxs = S)
+plot!(t_train, data_train[1][2])
+
+plot!(sol, idxs = I)
+plot!(t_train, data_train[2][2])
+
+plot!(sol, idxs = R)
+p = plot!(t_train, data_train[3][2])
+```
+```@example evalscenario3
+savefig(p, "train_fit_1.png")
+```
+
 
 * Expect time series data on I + R
 * Start with an assumption on the recovery
