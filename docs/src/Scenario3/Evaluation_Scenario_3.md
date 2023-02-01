@@ -358,6 +358,30 @@ the analysis and functionality, we started by building the model with vaccine by
 TA2.
 
 #### Data
+```@example evalscenario3
+age_groups = ["_0-9", "_10-19", "_20-29", "_30-39", "_40-49", "_50-59",
+              "_60-69", "_70-79", "_80-89", "_90-99", "_100+"]
+data_train = Dict()
+data_test = Dict()
+for ag in age_groups
+    data_train[ag[2:end]] = [(S+Sv) => N_total .- df_train.I .-  df_train.R .- df_train.H .-  df_train.D,
+                (I+Iv) => df_train.I,
+                (R+Rv) => df_train.R,
+                H => df_train[:, "H_unvac$(ag)"],
+                Hv => df_train[:, "H_vac$(ag)"],
+                D => df_train[:, "D_unvac$(ag)"],
+                Dv => df_train[:, "D_vac$(ag)"]
+                ] # Todo: potentially rename symbols depending on what the model looks like
+    data_test[ag[2:end]] = [(S+Sv) => N_total .- df_test.I .-  df_test.R .- df_test.H .-  df_test.D,
+                (I+Iv) => df_test.I,
+                (R+Rv) => df_test.R,
+                H => df_test[:, "H_unvac$(ag)"],
+                Hv => df_test[:, "H_vac$(ag)"],
+                D => df_test[:, "D_unvac$(ag)"],
+                Dv => df_test[:, "D_vac$(ag)"]
+                ] # Todo: potentially rename symbols depending on what the model looks like
+end  # There is also data for I, but not for the oldest 3 age groups. So far we ignore this.
+```
 
 * Previous data that is age stratified is cases, and hospitalizations
 * 10 stratifications, by 10 years each
