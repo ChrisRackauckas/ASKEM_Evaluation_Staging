@@ -173,10 +173,28 @@ sird = read_json_acset(LabelledPetriNet,"sird.json")
 sirh = read_json_acset(LabelledPetriNet,"sirh.json")
 sirhd = read_json_acset(LabelledPetriNet,"sirhd.json")
 sirhd_sys = ODESystem(sirhd)
+sirhd_sys = complete(sirhd_sys)
+@unpack S, I, R, H, D, inf, rec, ideath, death, hosp, hrec = sirhd_sys
+@parameters N = 1
+param_sub = [
+    inf => inf / N
+]
+sirhd_sys = substitute(sirhd_sys, param_sub)
+defs = ModelingToolkit.defaults(sirhd_sys)
+defs[S] = N_total - 10
+defs[I] = 10
+defs[H] = 0
+defs[D] = 0
+defs[R] = 0.0
+defs[N] = N_total
+defs[inf] = 0.5
+defs[rec] = 0.25
+defs[ideath] = 0.25
+defs[death] = 0.25
+defs[hosp] = 0.25
+defs[hrec] = 0.25
 tspan = (0.0, 40.0)
-u0 = [990, 10, 0, 0, 0]
-p = [0.01*10/1000, 0.25, 0.1, 0.1, 0.1, 0.1]
-sirhd_prob = ODEProblem(sirhd_sys, u0, tspan, p)
+sirhd_prob = ODEProblem(sirhd_sys, [], tspan)
 sirhd_sol = solve(sirhd_prob)
 plot(sirhd_sol)
 ```
@@ -188,15 +206,16 @@ of the model.
 The inverse problem solving is done via the same functionality as before.
 
 ```@example evalscenario3
-fitparams2 = global_datafit(sirhd_prob, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
-                            t_train, data_train)
+param_bounds = [inf, rec, ideath, death, hosp, hrec] .=> ([0.01, 10.0],)
+_prob = remake(sirhd_prob, u0 = u0s, tspan = (t_train[1], t_train[end]), p = [N => N_total])
+fitparams2 = global_datafit(_prob, param_bounds, t_train, data_train, maxiters = 200_000)
 ```
 
 Notice that this fit is not as good. That is to be expected because it's fitting the SIRHD model on the
 SIR model's output data. Thus we should expect that it also does not forecast entirely correctly.
 
 ```@example evalscenario3
-sirhd_prob2 = remake(sirhd_prob, p = fitparams2)
+sirhd_prob2 = remake(_prob, p = fitparams2)
 sol = solve(sirhd_prob2, saveat = t_test);
 plot(sol, idxs = S)
 plot!(t_test, data_test[1][2])
@@ -217,23 +236,30 @@ This checks out.
 #### Data Ask
 
 ```@example evalscenario3
-data_train = [S => N_total .- df_train.I .-  df_train.R, I => df_train.I, R => df_train.R, H => df_train.H, D => df_train.D]
-data_test = [S => N_total .- df_test.I .- df_test.R, I => df_test.I, R => df_test.R, H => df_test.H, D => df_test.D]
+data_train = [
+S => N_total .- df_train.I .-  df_train.R .- df_train.D .- df_train.H,
+I => df_train.I, R => df_train.R, H => df_train.H, D => df_train.D
+]
+data_test = [
+S => N_total .- df_test.I .-  df_test.R .- df_test.D .- df_test.H,
+I => df_test.I, R => df_test.R, H => df_test.H, D => df_test.D
+]
 
-u0s = [S => N_total - df_train.I[1] - df_train.R[1], I => df_train.I[1], R => df_train.R[1], H => df_train.H[1], D => df_train.D[1]]
-_prob2 = remake(prob2, u0 = u0s, tspan = (t_train[1], t_train[end]))
+u0s = [
+S => N_total - df_train.I[1] - df_train.R[1] - df_train.H[1] - df_train.D[1],
+I => df_train.I[1], R => df_train.R[1], H => df_train.H[1], D => df_train.D[1]
+]
+_prob2 = remake(sirhd_prob2, u0 = u0s, tspan = (t_train[1], t_train[end]), p = [N => N_total])
 
 param_bounds = [
-    β => [0.0, 5.1]
-    c => [9.0, 13.0]
-    γ => [0.0, 5.0]
-    ρ => [0.0, 5.0]
-    h => [0.0, 5.0]
-    d => [0.0, 20.0]
-    r => [0.0, 20.0]
+    inf => [0.0, 70]
+    rec => [0.0, 5.0]
+    death => [0.0, 5.0]
+    ideath => [0.0, 5.0]
+    hosp => [0.0, 10.0]
+    hrec => [0.0, 10.0]
 ]
-fitparams2 = global_datafit(_prob2, param_bounds,
-                            t_train, data_train, maxiters = 200_000) # These are not all the parameters, should add more.
+fitparams2 = global_datafit(_prob2, param_bounds, t_train, data_train, maxiters = 200_000)
 ```
 ```@example evalscenario3
 # Plot training fit
@@ -253,7 +279,10 @@ p = plot!(t_train, data_train[3][2], lab = "R_train", color = cs[6], dpi=300)
 savefig(p, "train_fit_S3_Q2.png")
 ```
 ```@example evalscenario3
-u0s = [S => N_total - df_test.I[1] - df_test.R[1], I => df_test.I[1], R => df_test.R[1]]
+u0s = [
+S => N_total - df_test.I[1] - df_test.R[1] - df_test.H[1] - df_test.D[1],
+I => df_test.I[1], R => df_test.R[1], H => df_test.H[1], D => df_test.D[1]
+]
 _prob2 = remake(_prob2, p = fitparams, u0=u0s, tspan = (t_test[1], t_test[end]))
 sol = solve(_prob2, saveat = t_test);
 
