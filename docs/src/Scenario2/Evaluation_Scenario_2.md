@@ -30,7 +30,7 @@ myread(fn) = readSBML(fn, doc -> begin
 m = myread(fn)
 rn = ReactionSystem(m)
 sys = convert(ODESystem, rn)
-eqs = equations(sys)
+eqs = ModelingToolkit.equations(sys)
 defs_ = ModelingToolkit.defaults(sys)
 defs = deepcopy(defs_)
 evs = ModelingToolkit.get_continuous_events(sys)
@@ -103,7 +103,7 @@ p = plot(solne, vars = idart)
 ```
 
 ```@example scenario2
-p = plot(solne.t, solne[sum(idart)])
+p = plot(solne, idxs = [sum(idart)], lab = "total infected")
 ```
 
 #### Unit Test 2
@@ -212,7 +212,7 @@ sort(filter(x -> endswith(string(x[1]), "_total_order"), sensres_vec), by = x ->
 ```
 
 ```@example scenario2
-create_sensitivity_plot(sensres, pbounds)
+create_sensitivity_plot(sensres, pbounds, true, ylims = (-0.2, 1.0), size=(800, 800))
 ```
 
 ### Minimum Parameter Threshold
