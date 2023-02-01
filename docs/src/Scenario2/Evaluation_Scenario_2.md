@@ -153,6 +153,7 @@ xmax, xmaxval = get_max_t(prob_test1, sum(idart))
 @test isapprox(xmax, 47; atol = 4)
 ```
 
+This test passes with SBML.jl
 ```@example scenario2
 @test_broken isapprox(xmaxval, 0.002; atol = 0.01)
 ```
@@ -182,8 +183,8 @@ compute server.
 ```@example scenario2
 pbounds = [param => [
                0.5 * defaultsmap[param],
-	       2 * defaultsmap[param],
-	   ] for param in parameters(sys)]
+               2 * defaultsmap[param],
+    ] for param in parameters(sys)]
 sensres = get_sensitivity(probne, 100.0, Infected, pbounds; samples = 200)
 sensres_vec = collect(sensres)
 sort(filter(x -> endswith(string(x[1]), "_first_order"), sensres_vec), by = x -> abs(x[2]),
@@ -232,7 +233,7 @@ of these parameters for further information.
 ```@example scenario2
 threshold_observable = (Infected + Diagnosed + Ailing + Recognized + Threatened) /
                        sum(states(sys))
-cost = -(epsilon + theta)
+cost = (epsilon + theta)
 ineq_cons = [2 * epsilon - theta]
 opt_p, sol_opt_p, ret = optimal_parameter_threshold(probne, threshold_observable,
                                                     0.33,
@@ -248,7 +249,7 @@ opt_p
 ```
 
 ```@example scenario2
-plot(sol_opt_p, idxs = [threshold_observable], lab = "total infected", leg = :topright)
+plot(sol_opt_p, idxs = [threshold_observable], lab = "total infected", leg = :bottomright)
 ```
 
 ## Question 2
@@ -366,17 +367,32 @@ hline!([1 / 3], lab = "limit")
 ```
 
 ```@example scenario2
-intervention_p = phi # Need to figure out what these should be
-cost = intervention_p - defaultsmapv[intervention_p]
-opt_p, solv2_s, ret = optimal_parameter_intervention_for_threshold(probv2,
-                                                                   threshold_observable,
-                                                                   0.33,
-                                                                   cost,
-                                                                   [intervention_p], [0.0],
-                                                                   [1.0],
-                                                                   (30.0, 100.0);
-                                                                   maxtime = 10);
-opt_p
+intervention_parameters = [theta => (2 * defs_v2[epsilon], 1) # 𝜃 >= 2 * 𝜀
+                           epsilon => (0, defs_v2[theta] / 2)
+                           phi => (0, 1)]
+
+opt_results = map(intervention_parameters) do (intervention_p, bounds)
+    cost = intervention_p - defs_v2[intervention_p]
+    opt_p, solv2_s, ret = optimal_parameter_intervention_for_threshold(probv2,
+                                                                       threshold_observable,
+                                                                       0.33,
+                                                                       cost,
+                                                                       [intervention_p], [0.0],
+                                                                       [1.0],
+                                                                       (30.0, 100.0);
+                                                                       maxtime = 10);
+end;
+map(first, opt_results)
+```
+
+```@example scenario2
+plts = map(opt_results) do opt_result
+    title = only(collect(opt_result[1]))
+    title = string(title[1], " = ", round(title[2], sigdigits = 3))
+    plot(opt_result[2][2]; idxs = [threshold_observable], lab = "total infected", title)
+    hline!([1/3], lab = "limit")
+end
+plot(plts...)
 ```
 
 Note that the optimization solution is trivial, i.e. there's no intervention at
@@ -397,7 +413,7 @@ In order to do this scenario a modeling decision for how to represent R0 in
 terms of the states was required. This needed expert information, which we
 called out for and documented the results in https:
 //github.com/ChrisRackauckas/ASKEM_Evaluation_Staging/issues/20. This led us to
-a definition of the instantanious R0 as defined in https:
+a definition of the instantaneous R0 as defined in https:
 //www.ncbi.nlm.nih.gov/pmc/articles/PMC7325187/ equation 1. However, the R
 computation requires the mean duration of infectiousness, we will use `D=20` for
 now to have a non-trivial optimization. Thus using this definition of R0 and our
