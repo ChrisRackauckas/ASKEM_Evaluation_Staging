@@ -95,7 +95,7 @@ Now we train on data from June 1 2021 to September 30 2021.
 using CSV, DataFrames, Downloads
 
 # Infectious/Recovered day by day:
-url = "https://raw.githubusercontent.com/DARPA-ASKEM/program-milestones/4ee24c6a268998148fc635b1e35088f4ebbbb7ce/6-month-milestone/evaluation/scenario_3/ta_4/usa-IRDVHN_age.csv"
+url = "https://raw.githubusercontent.com/DARPA-ASKEM/program-milestones/data-h-d-breakdown/6-month-milestone/evaluation/scenario_3/ta_4/usa-IRDVHN_age_HD_breakdown.csv"
 file = CSV.File(Downloads.download(url))
 df_raw = DataFrame(file)
 
@@ -330,18 +330,55 @@ norm(solve(_prob2, saveat = t_test)[D] - data_test[5][2])
 
 This expands the previous SIRHD model to add vaccination.
 ```@example evalscenario3
+using ModelingToolkit.Symbolics: variable
+using ModelingToolkit: toparam
 sirhd_vax = read_json_acset(LabelledPetriNet, "sirhd_vax.json")
 sirhd_vax_sys = structural_simplify(ODESystem(sirhd_vax))
+sirhd_vax_sys = complete(sirhd_vax_sys)
+names = string.(ModelingToolkit.getname.(states(sirhd_vax_sys)))
+sts_names = Symbol.(getindex.(names, 6), :_, getindex.(names, 11))
+@variables t
+sts = map(n->variable(n, T = SymbolicUtils.FnType)(t), sts_names)
+names = split.(string.(parameters(sirhd_vax_sys)), "\"")
+ps_names = Symbol.(getindex.(split.(getindex.(names, 3), "\\"), 1), :_,
+                   getindex.(split.(getindex.(names, 5), "\\"), 1))
+ps = map(n->toparam(variable(n)), ps_names)
+subs = [
+    parameters(sirhd_vax_sys) .=> ps
+    states(sirhd_vax_sys) .=> sts
+]
+sirhd_vax_sys = substitute(sirhd_vax_sys, subs)
+@unpack S_U, I_U, R_U, H_U, D_U, S_V, I_V, R_V, H_V, D_V = sirhd_vax_sys
+@unpack id_vax, inf_infuu, inf_infuv, hosp_id, ideath_id, rec_id, hrec_id, death_id, inf_infvu, inf_infvv = sirhd_vax_sys
 ```
 
 Question 3 is the same analysis as questions 1 and 2 done on a model with vaccination added. In order to build unit tests for
 the analysis and functionality, we started by building the model with vaccine by hand, awaiting a swap to the version from
 TA2.
 
-The unit test analysis code is as follows:
-
 ```@example evalscenario3
+@parameters t β=0.1 c=10.0 γ=0.25 ρ=0.1 h=0.1 d=0.1 r=0.1 v=0.1
+@parameters t β2=0.1 c2=10.0 ρ2=0.1 h2=0.1 d2=0.1 r2=0.1
+@variables S(t)=990.0 I(t)=10.0 R(t)=0.0 H(t)=0.0 D(t)=0.0
+@variables Sv(t)=990.0 Iv(t)=10.0 Rv(t)=0.0 Hv(t)=0.0 Dv(t)=0.0
+@variables I_total(t)
 
+∂ = Differential(t)
+N = S + I + R + H + D + Sv + Iv + Iv + Hv + Dv # This is recognized as a derived variable
+eqs = [∂(S) ~ -β * c * I_total / N * S - v * Sv,
+    ∂(I) ~ β * c * I_total / N * S - γ * I - h * I - ρ * I,
+    ∂(R) ~ γ * I + r * H,
+    ∂(H) ~ h * I - r * H - d * H,
+    ∂(D) ~ ρ * I + d * H,
+    ∂(Sv) ~ -β2 * c2 * I_total / N * Sv + v * Sv,
+    ∂(Iv) ~ β2 * c2 * I_total / N * Sv - γ * I - h2 * I - ρ2 * I,
+    ∂(Rv) ~ γ * I + r2 * H,
+    ∂(Hv) ~ h2 * I - r2 * H - d2 * H,
+    ∂(Dv) ~ ρ2 * I + d2 * H, I_total ~ I + Iv,
+];
+
+@named sys3 = ODESystem(eqs)
+sys3 = structural_simplify(sys3)
 ```
 
 #### Data Asks
@@ -351,6 +388,34 @@ The unit test analysis code is as follows:
 * Recovery rate difference due to vaccination?
 * Mortality rate difference due to vaccination? Hospitalized and not hospitalized
 
+```@example evalscenario3
+data_train = [(S+Sv) => N_total .- df_train.I .-  df_train.R .- df_train.H .-  df_train.D,
+                (I+Iv) => df_train.I, (R+Rv) => df_train.R, H => df_train.H_unvac, Hv => df_train.H_vac, D => df_train.D_unvac, Dv => df_train.D_vac]
+data_test = [(S+Sv) => N_total .- df_test.I .-  df_test.R .- df_test.H .-  df_test.D,
+              Sv => 0,
+                (I+Iv) => df_test.I, (R+Rv) => df_test.R, H => df_test.H_unvac, Hv => df_test.H_vac, D => df_test.D_unvac, Dv => df_test.D_vac]
+
+vac_rate = df_train.H_vac[1]/(df_train.H_vac[1]+df_train.H_unvac[1])
+# 52% of hospitalizations are vaccinated, we do not have data for vaccination rates for other compartments,
+# so we assume that the vaccination rate is the same for all compartments.
+```
+
+u0s = [S => (1-vac_rate)*(N_total-df_train.I[1]-df_train.R[1]-df_train.H[1]-df_train.D[1]),
+       I => (1-vac_rate) * df_train.I[1],
+       R => (1-vac_rate) * df_train.R[1],
+       H => df_train.H_unvac[1],
+       D => df_train.D_unvac[1],
+       Sv => vac_rate*(N_total-df_train.I[1]-df_train.R[1]-df_train.H[1]-df_train.D[1]),
+       Iv => vac_rate * df_train.I[1],
+       Rv => vac_rate * df_train.R[1],
+       Hv => df_train.H_vac[1],
+       Dv => df_train.D_vac[1]
+       ]
+_prob3 = remake(prob3, u0 = u0s, tspan = (t_train[1], t_train[end]))
+
+fitparams3 = global_datafit(_prob3, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
+                            t_train, data_train) # These are not all the parameters, should add more.
+```
 ## Question 4: Age-Stratified Model
 
 Question 4 is the same analysis as questions 1, 2, and 3 on a model with age-stratification added. In order to build unit tests for
