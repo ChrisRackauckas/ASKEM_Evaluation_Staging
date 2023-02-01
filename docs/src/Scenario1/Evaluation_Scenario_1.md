@@ -14,7 +14,7 @@ which we will use later.
 ```@example scenario1
 using EasyModelAnalysis, LinearAlgebra
 using EasyModelAnalysis.ModelingToolkit: toparam
-using EasyModelAnalysis.ModelingToolkit.Symbolics: FnType, variables
+using EasyModelAnalysis.ModelingToolkit.Symbolics: FnType, variable, variables
 using XLSX, CSV, DataFrames, Plots
 using Catlab, Catlab.CategoricalAlgebra, Catlab.Programs, AlgebraicPetri,
       AlgebraicPetri.TypedPetri
@@ -85,7 +85,26 @@ function scenario1(pops, mat; infectedfrac = nothing, numinfected = nothing)
     end
     P = map(splat(*), sir_strat[:, :rate])
     prob = ODEProblem(sys, U₀, (0, tf), P)
-    solve(prob)
+end
+```
+
+```@example scenario1
+function LogNormalPrior(mean, variance)
+    μ = log(mean^2 / sqrt(mean^2 + variance))
+    σ = sqrt(log(1 + variance / mean^2))
+    LogNormal(μ, σ)
+end
+
+function create_priors(C_mean, var)
+    c_priors = UnivariateDistribution[]
+    for (i,c) in enumerate(C_mean)
+        if C_mean[i] > 0
+            push!(c_priors, LogNormalPrior(C_mean[i], var))
+        else
+            push!(c_priors, Normal(C_mean[i], 0.0))
+        end
+    end
+    vcat(c_priors, [LogNormalPrior(0.07, var)])
 end
 ```
 
@@ -102,8 +121,18 @@ end
 N.B.: Uniform `1/n_strata` is the default in our model creation function above.
 
 ```@example scenario1
-sol = scenario1([2k, 2k, 2k], fill(1 / 3, 3, 3), numinfected = 1)
-plt_a1 = plot(sol, leg = :topright)
+prob = scenario1([2k, 2k, 2k], fill(1/3, 3, 3), numinfected = 1)
+sol = solve(prob)
+plot(sol, leg = :topright)
+```
+
+```@example scenario1
+_p = []
+for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
+    param_priors = create_priors(fill(1 / 3, (3, 3)), var)
+    push!(_p, plot_uncertainty_forecast(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50))
+end
+plot(_p..., layout = (1, 5), size = (1200, 300), plot_title = "Infected with varying priors")
 ```
 
 > ii. Simulate this model for the case where there is significant in-group contact
@@ -123,8 +152,18 @@ contact_matrix = [0.4 0.05 0.1
 We now use this updated contact matrix to re-run the simulation.
 
 ```@example scenario1
-sol = scenario1([2k, 2k, 2k], contact_matrix, numinfected = 1)
+prob = scenario1([2k, 2k, 2k], contact_matrix, numinfected = 1)
+sol = solve(prob)
 plt_a2 = plot(sol, leg = :topright)
+```
+
+```@example scenario1
+_p = []
+for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
+    param_priors = create_priors(contact_matrix, var)
+    push!(_p, plot_uncertainty_forecast(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50))
+end
+plot(_p..., layout = (1, 5), size = (1200, 300), plot_title = "Infected with varying priors")
 ```
 
 > iii. Simulate this model for the case where there is no contact between age groups.
@@ -132,8 +171,18 @@ plt_a2 = plot(sol, leg = :topright)
 > of no contact between age groups.
 
 ```@example scenario1
-sol = scenario1([2k, 2k, 2k], Diagonal(contact_matrix), numinfected = 1)
+prob = scenario1([2k, 2k, 2k], Diagonal(contact_matrix), numinfected = 1)
+sol = solve(prob)
 plt_a3 = plot(sol, leg = :topright)
+```
+
+```@example scenario1
+_p = []
+for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
+    param_priors = create_priors(Diagonal(contact_matrix), var)
+    push!(_p, plot_uncertainty_forecast(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50))
+end
+plot(_p..., layout = (1, 5), size = (1200, 300), plot_title = "Infected with varying priors")
 ```
 
 > Simulate social distancing by scaling down the uniform contact matrix by a
@@ -141,8 +190,18 @@ plt_a3 = plot(sol, leg = :topright)
 
 ```@example scenario1
 uniform_matrix = fill(0.33, (3, 3))
-sol = scenario1([2k, 2k, 2k], 0.5 * uniform_matrix, numinfected = 1)
+sol = solve(scenario1([2k, 2k, 2k], 0.5 * uniform_matrix, numinfected = 1))
 plt_a4 = plot(sol, leg = :topright)
+```
+
+
+```@example scenario1
+_p = []
+for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
+    param_priors = create_priors(0.5 * uniform_matrix, var)
+    push!(_p, plot_uncertainty_forecast(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50))
+end
+plot(_p..., layout = (1, 5), size = (1200, 300), plot_title = "Infected with varying priors")
 ```
 
 > Repeat 1.a.iv for the scenario where the young population has poor compliance
@@ -223,7 +282,7 @@ a data set of the sum of these locations). The data values in these
 excel files are raw, averaged survey results.
 
 !!! note
-    
+
     We make no attempt to normalize or otherwise adjust the contact matrices. The interpretation of the contact matrices needs to be
     consistent with the SIR parameter `β`, which is fixed in our the
     given scenario. In a real world case, care would need to be taken
