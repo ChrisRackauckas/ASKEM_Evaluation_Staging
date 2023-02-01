@@ -356,6 +356,55 @@ The unit test analysis code is as follows:
 Question 4 is the same analysis as questions 1, 2, and 3 on a model with age-stratification added. In order to build unit tests for
 the analysis and functionality, we started by building the model with vaccine by hand, awaiting a swap to the version from
 TA2.
+```julia
+using ModelingToolkit.Symbolics: variable
+using ModelingToolkit: toparam
+sirhd_vax_age16 = read_json_acset(LabelledPetriNet,"sirhd_vax_age16.json")
+sirhd_vax_age16  = ODESystem(sirhd_vax_age16)
+sirhd_vax_age16  = complete(sirhd_vax_age16 )
+_names = string.(ModelingToolkit.getname.(states(sirhd_vax_age16)))
+
+sts_names = Symbol.(getindex.(_names, 6), :_, getindex.(_names, 11))
+sts = map(n->variable(n, T = SymbolicUtils.FnType)(t), sts_names)
+
+__names = split.(string.(parameters(sirhd_vax_age16)), "\"")
+ps_names = Symbol.(getindex.(split.(getindex.(__names, 3), "\\"), 1), :_,
+                   getindex.(split.(getindex.(__names, 5), "\\"), 1))
+ps = map(n->toparam(variable(n)), ps_names)
+subs = [
+    parameters(sirhd_vax_age16) .=> ps
+    states(sirhd_vax_age16) .=> sts
+]
+sirhd_vax_age16 = substitute(sirhd_vax_age16, subs)
+@unpack S_U, I_U, R_U, H_U, D_U, S_V, I_V, R_V, H_V, D_V = sirhd_vax_sys
+@unpack id_vax, inf_infuu, inf_infuv, hosp_id, ideath_id, rec_id, hrec_id, death_id, inf_infvu, inf_infvv = sirhd_vax_sys
+
+@parameters N = 1
+param_sub = [
+    inf => inf / N
+]
+sirhd_sys = substitute(sirhd_vax_age16, param_sub)
+defs = ModelingToolkit.defaults(sirhd_vax_age16)
+
+# @unpack S, I, R, H, D, inf, rec, ideath, death, hosp, hrec = sirhd_sys # How to do this for stratified model?
+
+defs[S] = N_total - 10
+defs[I] = 10
+defs[H] = 0
+defs[D] = 0
+defs[R] = 0.0
+defs[N] = N_total
+defs[inf] = 0.5
+defs[rec] = 0.25
+defs[ideath] = 0.25
+defs[death] = 0.25
+defs[hosp] = 0.25
+defs[hrec] = 0.25
+tspan = (0.0, 40.0)
+sirhd_prob = ODEProblem(sirhd_sys, [], tspan)
+sirhd_sol = solve(sirhd_prob)
+plot(sirhd_sol)
+```
 
 #### Data
 ```@example evalscenario3
