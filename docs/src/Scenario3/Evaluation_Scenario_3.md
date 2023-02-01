@@ -110,7 +110,7 @@ Now we train on data from June 1 2021 to September 30 2021.
 using CSV, DataFrames, Downloads
 
 # Infectious/Recovered day by day:
-url = "https://raw.githubusercontent.com/DARPA-ASKEM/program-milestones/4ee24c6a268998148fc635b1e35088f4ebbbb7ce/6-month-milestone/evaluation/scenario_3/ta_4/usa-IRDVHN_age.csv"
+url = "https://raw.githubusercontent.com/DARPA-ASKEM/program-milestones/data-h-d-breakdown/6-month-milestone/evaluation/scenario_3/ta_4/usa-IRDVHN_age_HD_breakdown.csv"
 file = CSV.File(Downloads.download(url))
 df_raw = DataFrame(file)
 
@@ -328,7 +328,8 @@ eqs = [∂(S) ~ -β * c * I_total / N * S - v * Sv,
     ∂(I) ~ β * c * I_total / N * S - γ * I - h * I - ρ * I,
     ∂(R) ~ γ * I + r * H,
     ∂(H) ~ h * I - r * H - d * H,
-    ∂(D) ~ ρ * I + d * H, ∂(Sv) ~ -β2 * c2 * I_total / N * Sv + v * Sv,
+    ∂(D) ~ ρ * I + d * H,
+    ∂(Sv) ~ -β2 * c2 * I_total / N * Sv + v * Sv,
     ∂(Iv) ~ β2 * c2 * I_total / N * Sv - γ * I - h2 * I - ρ2 * I,
     ∂(Rv) ~ γ * I + r2 * H,
     ∂(Hv) ~ h2 * I - r2 * H - d2 * H,
@@ -342,7 +343,7 @@ sys3 = structural_simplify(sys3)
 The unit test analysis code is as follows:
 
 ```@example evalscenario3
-
+prob3 = ODEProblem(sys3, [], tspan);
 ```
 
 #### Data Asks
@@ -352,6 +353,34 @@ The unit test analysis code is as follows:
 * Recovery rate difference due to vaccination?
 * Mortality rate difference due to vaccination? Hospitalized and not hospitalized
 
+```@example evalscenario3
+data_train = [(S+Sv) => N_total .- df_train.I .-  df_train.R .- df_train.H .-  df_train.D,
+                (I+Iv) => df_train.I, (R+Rv) => df_train.R, H => df_train.H_unvac, Hv => df_train.H_vac, D => df_train.D_unvac, Dv => df_train.D_vac]
+data_test = [(S+Sv) => N_total .- df_test.I .-  df_test.R .- df_test.H .-  df_test.D,
+              Sv => 0,
+                (I+Iv) => df_test.I, (R+Rv) => df_test.R, H => df_test.H_unvac, Hv => df_test.H_vac, D => df_test.D_unvac, Dv => df_test.D_vac]
+
+vac_rate = df_train.H_vac[1]/(df_train.H_vac[1]+df_train.H_unvac[1]) 
+# 52% of hospitalizations are vaccinated, we do not have data for vaccination rates for other compartments,
+# so we assume that the vaccination rate is the same for all compartments.
+```
+
+u0s = [S => (1-vac_rate)*(N_total-df_train.I[1]-df_train.R[1]-df_train.H[1]-df_train.D[1]),
+       I => (1-vac_rate) * df_train.I[1],
+       R => (1-vac_rate) * df_train.R[1],
+       H => df_train.H_unvac[1],
+       D => df_train.D_unvac[1],
+       Sv => vac_rate*(N_total-df_train.I[1]-df_train.R[1]-df_train.H[1]-df_train.D[1]),
+       Iv => vac_rate * df_train.I[1],
+       Rv => vac_rate * df_train.R[1],
+       Hv => df_train.H_vac[1],
+       Dv => df_train.D_vac[1]
+       ]
+_prob3 = remake(prob3, u0 = u0s, tspan = (t_train[1], t_train[end]))
+
+fitparams3 = global_datafit(_prob3, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
+                            t_train, data_train) # These are not all the parameters, should add more.
+```
 ## Question 4: Age-Stratified Model
 
 Question 4 is the same analysis as questions 1, 2, and 3 on a model with age-stratification added. In order to build unit tests for
