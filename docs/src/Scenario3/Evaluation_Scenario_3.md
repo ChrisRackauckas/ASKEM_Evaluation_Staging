@@ -289,13 +289,17 @@ sirhd_vax_sys = complete(sirhd_vax_sys)
 names = string.(ModelingToolkit.getname.(states(sirhd_vax_sys)))
 sts_names = Symbol.(getindex.(names, 6), :_, getindex.(names, 11))
 @variables t
+@parameters N
 sts = map(n->variable(n, T = SymbolicUtils.FnType)(t), sts_names)
 names = split.(string.(parameters(sirhd_vax_sys)), "\"")
 ps_names = Symbol.(getindex.(split.(getindex.(names, 3), "\\"), 1), :_,
                    getindex.(split.(getindex.(names, 5), "\\"), 1))
 ps = map(n->toparam(variable(n)), ps_names)
+nps = findall(x->occursin("inf", string(x)), ps)
+ups = findall(x->!occursin("inf", string(x)), ps)
 subs = [
-    parameters(sirhd_vax_sys) .=> ps
+    parameters(sirhd_vax_sys)[nps] .=> ps[nps] ./ N
+    parameters(sirhd_vax_sys)[ups] .=> ps[ups]
     states(sirhd_vax_sys) .=> sts
 ]
 sirhd_vax_sys = substitute(sirhd_vax_sys, subs)
@@ -342,9 +346,9 @@ u0s = [S => (1-vac_rate)*(N_total-df_train.I[1]-df_train.R[1]-df_train.H[1]-df_t
        Hv => df_train.H_vac[1],
        Dv => df_train.D_vac[1]
        ]
-_prob3 = remake(prob3, u0 = u0s, tspan = (t_train[1], t_train[end]), p = ps .=> 0.1)
+_prob3 = remake(prob3, u0 = u0s, tspan = (t_train[1], t_train[end]), p = [ps .=> 0.1; N => N_total])
 
-fitparams3 = global_datafit(_prob3, ps .=> ([0, 5.0],), t_train, data_train, maxiters = 100_000)
+fitparams3 = global_datafit(_prob3, ps .=> ([0, 5.0],), t_train, data_train, maxiters = 200_000)
 ```
 
 ```@example evalscenario3
