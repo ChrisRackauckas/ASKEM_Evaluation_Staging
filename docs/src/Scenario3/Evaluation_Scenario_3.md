@@ -133,22 +133,24 @@ data_test = [S => N_total .- df_test.I .- df_test.R, I => df_test.I, R => df_tes
 u0s = [S => N_total - df_train.I[1] - df_train.R[1], I => df_train.I[1], R => df_train.R[1]]
 _prob = remake(prob, u0 = u0s, tspan = (t_train[1], t_train[end]))
 
-fitparams = global_datafit(prob, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
-                           t_train, data_train)
+fitparams = global_datafit(_prob, [β => [0, 1.0], c => [0.0, 1.0], γ => [0.0, 0.1]],
+                           t_train, data_train, maxiters = 200_000)
 ```
 
 ```@example evalscenario3
 # Plot training fit
-_prob = remake(_prob, p = fitparams)
-sol = solve(_prob, saveat = t_train);
-plot(sol, idxs = S)
-plot!(t_train, data_train[1][2])
+_prob_train = remake(_prob, p = fitparams)
+sol = solve(_prob_train, saveat = t_train);
 
-plot!(sol, idxs = I)
-plot!(t_train, data_train[2][2])
+cs = Plots.distinguishable_colors(10)[end-5:end]
+plot(sol, idxs = S, color = cs[1])
+plot!(t_train, data_train[1][2], lab = "S_train", color = cs[2])
 
-plot!(sol, idxs = R)
-p = plot!(t_train, data_train[3][2])
+plot!(sol, idxs = I, color = cs[3])
+plot!(t_train, data_train[2][2], lab = "I_train", color = cs[4])
+
+plot!(sol, idxs = R, color = cs[5])
+p = plot!(t_train, data_train[3][2], lab = "R_train", color = cs[6], dpi=300)
 ```
 ```@example evalscenario3
 savefig(p, "train_fit_S3_Q1.png")
@@ -157,16 +159,16 @@ savefig(p, "train_fit_S3_Q1.png")
 # Plot test fit
 ```@example evalscenario3
 u0s = [S => N_total - df_test.I[1] - df_test.R[1], I => df_test.I[1], R => df_test.R[1]]
-_prob = remake(_prob, p = fitparams, u0=u0s, tspan = (t_test[1], t_test[end]))
-sol = solve(_prob, saveat = t_test);
-plot(sol, idxs = S)
-plot!(t_test, data_test[1][2])
+_prob_test = remake(_prob, p = fitparams, u0=u0s, tspan = (t_test[1], t_test[end]))
+sol = solve(_prob_test, saveat = t_test);
+plot(sol, idxs = S, color = cs[1])
+plot!(t_test, data_test[1][2], lab = "S_test", color = cs[2])
 
-plot!(sol, idxs = I)
-plot!(t_test, data_test[2][2])
+plot!(sol, idxs = I, color = cs[3])
+plot!(t_test, data_test[2][2], lab = "I_test", color = cs[4])
 
-plot!(sol, idxs = R)
-p = plot!(t_test, data_test[3][2])
+plot!(sol, idxs = R, color = cs[5])
+p = plot!(t_test, data_test[3][2], lab = "R_test", color = cs[6], dpi=300)
 ```
 ```@example evalscenario3
 savefig(p, "test_fit_S3_Q1.png")
@@ -246,21 +248,31 @@ data_test = [S => N_total .- df_test.I .- df_test.R, I => df_test.I, R => df_tes
 u0s = [S => N_total - df_train.I[1] - df_train.R[1], I => df_train.I[1], R => df_train.R[1], H => df_train.H[1], D => df_train.D[1]]
 _prob2 = remake(prob2, u0 = u0s, tspan = (t_train[1], t_train[end]))
 
-fitparams2 = global_datafit(_prob2, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
-                            t_train, data_train) # These are not all the parameters, should add more.
+param_bounds = [
+    β => [0.0, 5.1]
+    c => [9.0, 13.0]
+    γ => [0.0, 5.0]
+    ρ => [0.0, 5.0]
+    h => [0.0, 5.0]
+    d => [0.0, 20.0]
+    r => [0.0, 20.0]
+]
+fitparams2 = global_datafit(_prob2, param_bounds,
+                            t_train, data_train, maxiters = 200_000) # These are not all the parameters, should add more.
 ```
 ```@example evalscenario3
 # Plot training fit
-_prob2 = remake(_prob2, p = fitparams2)
-sol = solve(_prob2, saveat = t_train);
-plot(sol, idxs = S)
-plot!(t_train, data_train[1][2])
+_prob2_train = remake(_prob2, p = fitparams2)
+sol = solve(_prob2_train, saveat = t_train);
 
-plot!(sol, idxs = I)
-plot!(t_train, data_train[2][2])
+plot(sol, idxs = S, color = cs[1])
+plot!(t_train, data_train[1][2], lab = "S_train", color = cs[2])
 
-plot!(sol, idxs = R)
-p = plot!(t_train, data_train[3][2])
+plot!(sol, idxs = I, color = cs[3])
+plot!(t_train, data_train[2][2], lab = "I_train", color = cs[4])
+
+plot!(sol, idxs = R, color = cs[5])
+p = plot!(t_train, data_train[3][2], lab = "R_train", color = cs[6], dpi=300)
 ```
 ```@example evalscenario3
 savefig(p, "train_fit_S3_Q2.png")
@@ -269,14 +281,15 @@ savefig(p, "train_fit_S3_Q2.png")
 u0s = [S => N_total - df_test.I[1] - df_test.R[1], I => df_test.I[1], R => df_test.R[1]]
 _prob2 = remake(_prob2, p = fitparams, u0=u0s, tspan = (t_test[1], t_test[end]))
 sol = solve(_prob2, saveat = t_test);
-plot(sol, idxs = S)
-plot!(t_test, data_test[1][2])
 
-plot!(sol, idxs = I)
-plot!(t_test, data_test[2][2])
+plot(sol, idxs = S, color = cs[1])
+plot!(t_test, data_test[1][2], lab = "S_test", color = cs[2])
 
-plot!(sol, idxs = R)
-p = plot!(t_test, data_test[3][2])
+plot!(sol, idxs = I, color = cs[3])
+plot!(t_test, data_test[2][2], lab = "I_test", color = cs[4])
+
+plot!(sol, idxs = R, color = cs[5])
+p = plot!(t_test, data_test[3][2], lab = "R_test", color = cs[6], dpi=300)
 ```
 ```@example evalscenario3
 savefig(p, "test_fit_S3_Q2.png")
