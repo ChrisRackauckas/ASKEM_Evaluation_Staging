@@ -395,63 +395,75 @@ end
 plot(plts...)
 ```
 
-Note that the optimization solution is trivial, i.e. there's no intervention at
-all. This is expected because the model without any intervention would already
-have less than 1/3 of the population infected.
-
 ### b.ii
 
-> Let’s say our goal is to get the reproduction number R0 below 1.0, at some
-> point within the next 100 days. Are there interventions that will allow us to
-> meet our goal? If there are multiple options, which single intervention would
-> have the greatest impact on R0 and let us meet our goal with minimal change to
-> the intervention parameter? Assume that the intervention will be implemented
-> after one month (t = day 30), and will stay constant after that, over the
-> remaining time period (i.e. the following 70 days).
+> Let’s say our goal is to get the reproduction number Rt below 1.0, within the
+> next 60 days. Which interventions will allow us to meet our goal, while
+> minimizing total cumulative infections (over all infected states I, D, A, R,
+> T)? If there are multiple options, show the tradeoff between change in
+> parameter and infected populations – show the space of possible solutions.
+> Which single intervention would have the greatest impact on Rt and let us meet
+> our goal with minimal change to the intervention parameter, while minimizing
+> total cumulative infections? Assume that the intervention will be implemented
+> immediately. Use Rt as defined in the SIDDARTHE-V publication. No intervention
+> and increasing the infected population, are not valid solutions for this
+> problem.
 
-In order to do this scenario a modeling decision for how to represent R0 in
-terms of the states was required. This needed expert information, which we
-called out for and documented the results in https:
-//github.com/ChrisRackauckas/ASKEM_Evaluation_Staging/issues/20. This led us to
-a definition of the instantaneous R0 as defined in https:
-//www.ncbi.nlm.nih.gov/pmc/articles/PMC7325187/ equation 1. However, the R
-computation requires the mean duration of infectiousness, we will use `D=20` for
-now to have a non-trivial optimization. Thus using this definition of R0 and our
-intervention functionality designed to find parameters to keep a value below a
-threshold, we were able to solve for the intervention.
-
-Another modeling decision required here was the definition of intervention parameters, which we decided to use the same parameters
-as b.i.
+A modeling decision required here was the definition of intervention parameters,
+which we decided to use the same parameters as b.i.
 
 ```@example scenario2
-D = 20
-R0 = alpha * @nonamespace(sysv.S) * D # double check
-plot(solv2, idxs = [R0])
+@unpack alpha, beta, zeta, epsilon, eta, xi, lambda, rho, theta, mu, kappa, tau, sigma, S, I, D, A, R, T = sysv;
+r1 = epsilon + xi + lambda
+r2 = eta + rho
+r3 = theta + mu + kappa
+r4 = nu + xi + tau
+r5 = sigma + tau
+R0 = (alpha + beta * epsilon / r2 + gamma * zeta / r3 + delta * ((eta * epsilon /
+(r2 * r4)) + (zeta * theta)/ (r3 * r4))) / r1
+R_t = S * R0
+plot(solv2, idxs = [R_t], lab = "R_t")
+@variables t cumulative_inf(t)
+total_inf = (I + D + A + R + T) / sum(states(sysv))
+sysva = add_accumulations(sysv, [cumulative_inf => total_inf])
+using ModelingToolkit: @set!
+@set! sysva.defaults = defs_v2
+u03 = [u0valsv; 0.0]
+probv3 = ODEProblem(sysva, u03, (0, 60.0))
+solv3 = solve(probv3)
+plot(solv3)
 ```
 
+A modeling decision required here is that we want to minimize the sum of
+normalized cumulative total infections and the change of intervention parameters
+`theta`, `epsilon`, and `phi`.
 ```@example scenario2
-intervention_parameters = [theta => (2 * defs_v2[eta], 1) # 𝜃 >= 2 * 𝜀
-                           eta => (0, defs_v2[theta] / 2)
+intervention_parameters = [theta => (2 * defs_v2[epsilon], 3) # 𝜃 >= 2 * 𝜀
+                           epsilon => (0, defs_v2[theta] / 2)
                            phi => (0, 1)]
+sol_cost = sol -> begin
+    sol(sol.t[end], idxs = cumulative_inf)
+end
 opt_results = map(intervention_parameters) do (intervention_p, bounds)
     cost = intervention_p - defs_v2[intervention_p]
-    optimal_parameter_intervention_for_reach(probv2,
-                                             R0,
+    optimal_parameter_intervention_for_reach(probv3,
+                                             R_t,
                                              1.0,
-                                             cost,
+                                             (cost, sol_cost),
                                              [intervention_p], [bounds[1]], [bounds[2]],
-                                             (30.0, 100.0);
                                              maxtime = 10)
 end;
 map(first, opt_results)
 ```
 
+We can see that increasing the rate of vaccination is the most effective.
 ```@example scenario2
 plts = map(opt_results) do opt_result
     title = only(collect(opt_result[1]))
-    title = title[1] => round(title[2], sigdigits = 3)
-    plot(opt_result[2][2]; idxs = [R0], lab = "R0", title)
-    hline!([1], lab = "limit")
+    title = string(title[1], " = ", round(title[2], sigdigits = 3))
+    plot(opt_result[2][2]; idxs = [R_t], lab = "R_t", title)
+    plot!(opt_result[2][2]; idxs = [cumulative_inf], lab = "cumulative infected", title)
+    hline!([1], lab = "limit", ylims = (0, 10))
 end
 plot(plts...)
 ```
