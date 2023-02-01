@@ -18,4 +18,12 @@ Pkg.instantiate()
 include("make.jl")
 ```
 
+## Dependencies Information
+
+All information about the required dependencies is stored in the Project.toml file:
+
+https://github.com/ChrisRackauckas/ASKEM_Evaluation_Staging/blob/main/docs/Project.toml
+
+## Example of the Output Plots
+
 ![](https://user-images.githubusercontent.com/1814174/216075828-e7e7289b-1300-483f-bc3d-9bf73820fc33.png)
