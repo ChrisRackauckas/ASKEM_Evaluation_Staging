@@ -260,11 +260,7 @@ This forms SIDARTHE-V by manually adding the V state and vax transition. It comp
 
 ```@example scenario2
 import Graphviz_jll
-sidarthe_v = deepcopy(sidarthe)
-new_s = add_species!(sidarthe_v;sname=:V)
-new_t = add_transition!(sidarthe_v;tname=:vax)
-new_i = add_input!(sidarthe_v,new_t,1)
-new_o = add_output!(sidarthe_v,new_t,new_s)
+sidarthe_v = read_json_acset(LabelledPetriNet, "sidarthe_v.json")
 
 mca_sidarthe_v = mca(sidarthe,sidarthe_v)
 AlgebraicPetri.Graph(mca_sidarthe_v[1])
@@ -281,13 +277,26 @@ sidarthe_sub = Subobject(
 AlgebraicPetri.Graph(dom(hom(negate(sidarthe_sub))))
 ```
 
+### Setup the Parameters
+
+> Set the same initial values and parameter settings in 1.b.i. Let V(t=0) = 0, τ
+> (in SIDARTHE) = τ2 (in SIDDARTHE-V), and τ1 = (1/3)\*τ2 (reflecting the fact
+> that the mortality rate for critical conditions (state T), will always be
+> larger than for other infected states). Assume that the vaccination rate psi
+> is 0 to start with. The SIDARTHE-V model allows for three main types of
+> interventions: (1) Those that impact the transmission parameters (α, β, γ and
+> δ) – social distancing, masking, lockdown; (2) Those that impact the detection
+> parameters (ε, θ) – testing and contact tracing; (3) Those that impact the
+> vaccination rate psi – vaccination campaigns. Assume previously stated
+> constraints: θ >= 2* ε, and τ1 = (1/3)*τ2.
+
 ```@example scenario2
 sysv = ODESystem(sidarthe_v)
 u0valsv = [u0vals; 0.0]  # 0 vaccinated initially
-paramvalsv = [paramvals; 0.0025]
+paramvalsv = [paramvals; 0.0025; defaultsmap[tau] /3]  # add phi and tau1
 defaultsmapv = Dict(Num(param) => val for (param, val) in zip(parameters(sysv), paramvalsv))
-@unpack beta, gamma, delta, alpha, epsilon, kappa, sigma, rho, xi, mu, tau, lambda, eta, nu, zeta, theta, vax = sysv
-phi = vax
+@unpack beta, gamma, delta, alpha, epsilon, kappa, sigma, rho, xi, mu, tau1, tau2, lambda, eta, nu, zeta, theta, vax = sysv
+phi = vax;
 ```
 
 ```@example scenario2
@@ -316,29 +325,6 @@ xmax, xmaxval = get_max_t(probv, sum(idart))
 ```
 
 This test passed with the original SBML model but failed with the model from the TA2 integration.
-
-### Setup the Parameters
-
-> Set the same initial values and parameter settings in 1.b.i. Let V(t=0) = 0, τ
-> (in SIDARTHE) = τ2 (in SIDDARTHE-V), and τ1 = (1/3)\*τ2 (reflecting the fact
-> that the mortality rate for critical conditions (state T), will always be
-> larger than for other infected states). Assume that the vaccination rate psi
-> is 0 to start with. The SIDARTHE-V model allows for three main types of
-> interventions: (1) Those that impact the transmission parameters (α, β, γ and
-> δ) – social distancing, masking, lockdown; (2) Those that impact the detection
-> parameters (ε, θ) – testing and contact tracing; (3) Those that impact the
-> vaccination rate psi – vaccination campaigns. Assume previously stated
-> constraints: θ >= 2* ε, and τ1 = (1/3)*τ2.
-
-```@example scenario2
-# TODO: tau1 and tau2?
-defs_v2 = copy(defaultsmapv)
-defs_v2[tau] = defaultsmapv[tau] / 3
-defs_v2[vax] = 0
-probv2 = remake(probv; p = defs_v2)
-solv2 = solve(probv2)
-plot(solv2)
-```
 
 ### b.i
 
