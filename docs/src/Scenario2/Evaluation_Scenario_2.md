@@ -2,20 +2,18 @@
 
 ## Question 1
 
-This reads in the SIDARTHE model from a JSON formed from Semagrams.
+### Read in the SIDARTHE model from a JSON formed from Semagrams
 
 ```@example scenario2
 using Catlab, AlgebraicPetri, Catlab.CategoricalAlgebra, ModelingToolkit
-import AlgebraicPetri.SubACSets
-sidarthe = read_json_acset(LabelledPetriNet,"sidarthe.json")
-sys_sidarthe = ODESystem(sidarthe)
+using AlgebraicPetri.SubACSets
+sidarthe = read_json_acset(LabelledPetriNet, "sidarthe.json")
+sys = ODESystem(sidarthe)
 ```
 
-### Ingest SIDARTHE
+### Load parameter values and initial concentrations from SBML file
 
-This is the version directly from the SBML file. This will be replaced with a version from TA1/TA2 when available. This used our
-[SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl) library which reads SBML into ModelingToolkit and generates TeX'd versions
-of the equations so we could read the resulting model and confirm it is correct against the paper description.
+This uses our [SBMLToolkit.jl](https://github.com/SciML/SBMLToolkit.jl) library which reads SBML into ModelingToolkit and generates TeX'd versions of the equations so we could read the resulting model and confirm it is correct against the paper description.
 
 ```@example scenario2
 using EasyModelAnalysis, SBML, SBMLToolkit, UnPack, Test
@@ -28,25 +26,19 @@ myread(fn) = readSBML(fn, doc -> begin
                       end)
 
 m = myread(fn)
-rn = ReactionSystem(m)
-sys = convert(ODESystem, rn)
-eqs = ModelingToolkit.equations(sys)
-defs_ = ModelingToolkit.defaults(sys)
-defs = deepcopy(defs_)
-evs = ModelingToolkit.get_continuous_events(sys)
 
-@unpack Infected, Healed, Extinct, Diagnosed, Ailing, Recognized, Susceptible, Threatened = sys
-@unpack alpha, epsilon, gamma, beta, delta, mu, nu, lambda, rho, kappa, xi, sigma, zeta, eta, theta, tau = sys
+paramvals = map(name->m.parameters[string(name)].value, tnames(sidarthe))
+namemap = Dict(:S => "Susceptible", :I => "Infected", :D => "Diagnosed", :A => "Ailing", :R => "Recognized",
+               :T => "Threatened", :H => "Healed", :E => "Extinct")
+u0vals = map(name->m.species[namemap[name]].initial_concentration, snames(sidarthe))
+let S, I, D, A, R, T, H, E
+    @unpack S, I, D, A, R, T, H, E = sys
+    global Infected, Healed, Extinct, Diagnosed, Ailing, Recognized, Susceptible, Threatened
+    Infected, Healed, Extinct, Diagnosed, Ailing, Recognized, Susceptible, Threatened = I, H, E, D, A, R, S, T
+end
+@unpack beta, gamma, delta, alpha, epsilon, kappa, sigma, rho, xi, mu, tau, lambda, eta, nu, zeta, theta = sys
 ps = [alpha, epsilon, gamma, beta, delta, mu, nu, lambda, rho, kappa, xi, sigma, zeta, eta]
-
-@parameters t
-D = Differential(t)
-eqs2 = deepcopy(eqs)
-append!(eqs2, D.(ps) .~ 0)
-
-sys2 = ODESystem(eqs2, ModelingToolkit.get_iv(sys), states(sys), parameters(sys);
-                 continuous_events = evs, defaults = defs, name = nameof(sys))
-ssys = structural_simplify(sys2)
+defaultsmap = Dict(param => val for (param, val) in zip(parameters(sys), paramvals))
 ```
 
 ### Unit Tests
@@ -74,22 +66,16 @@ time-dependent parameters. This is because dropping the time-dependency and trea
 results of the unit test 1. A demonstration of this is as follows:
 
 ```@example scenario2
-sysne = ODESystem(eqs2, ModelingToolkit.get_iv(sys), states(sys), parameters(sys);
-                  defaults = defs, name = nameof(sys))
-ssysne = structural_simplify(sysne)
-probne = ODEProblem(ssysne, [], (0.0, 100.0))
+ssys = structural_simplify(sys)
+probne = ODEProblem(ssys, u0vals, (0.0, 100.0), paramvals)
 solne = solve(probne, Tsit5())
 plot(solne)
 ```
 
 ```@example scenario2
-ITALY_POPULATION = 60e6
 idart = [Infected, Diagnosed, Ailing, Recognized, Threatened]
 xmax, xmaxval = get_max_t(probne, sum(idart))
 @test isapprox(xmax, 47; atol = 0.5)
-```
-
-```@example scenario2
 @test isapprox(xmaxval, 0.6, atol = 0.01)
 ```
 
@@ -133,7 +119,7 @@ pars = [alpha => 0.570, beta => 0.011, delta => 0.011, gamma => 0.456, epsilon =
     theta => 0.371,
     zeta => 0.125, eta => 0.125, mu => 0.017, nu => 0.027, tau => 0.01,
     lambda => 0.034, rho => 0.034, kappa => 0.017, xi => 0.017, sigma => 0.017]
-prob = ODEProblem(ssys, [], (0, 100))
+prob = ODEProblem(ssys, u0vals, (0, 100), paramvals)
 prob_test1 = remake(prob, u0 = u0s, p = pars)
 solt1 = solve(prob_test1, Tsit5(); saveat = 0:100)
 og_states = states(sys)[1:8]
@@ -192,9 +178,9 @@ compute server.
 
 ```@example scenario2
 pbounds = [param => [
-               0.5 * ModelingToolkit.defaults(sys)[param],
-               2 * ModelingToolkit.defaults(sys)[param],
-           ] for param in parameters(sys2)]
+               0.5 * defaultsmap[param],
+	       2 * defaultsmap[param],
+	   ] for param in parameters(sys)]
 sensres = get_sensitivity(probne, 100.0, Infected, pbounds; samples = 200)
 sensres_vec = collect(sensres)
 sort(filter(x -> endswith(string(x[1]), "_first_order"), sensres_vec), by = x -> abs(x[2]),
@@ -250,8 +236,8 @@ opt_p, sol_opt_p, ret = optimal_parameter_threshold(probne, threshold_observable
                                                     cost, [epsilon, theta],
                                                     [0.0, 0.0],
                                                     3 .* [
-                                                        ModelingToolkit.defaults(sys)[epsilon],
-                                                        ModelingToolkit.defaults(sys)[theta],
+                                                        defaultsmap[epsilon],
+                                                        defaultsmap[theta],
                                                     ];
                                                     maxtime = 60,
                                                     ineq_cons);
@@ -262,21 +248,9 @@ opt_p
 plot(sol_opt_p, idxs = [threshold_observable], lab = "total infected", leg = :topright)
 ```
 
-```@example scenario2
-params = map(t -> ModelingToolkit.defaults(sys)[eval(:(@nonamespace sys.$(Symbol(chop(string(t); head=1, tail=0)))))], sidarthe[:,:tname])
-
-name_mapping = Dict(s => only(filter(n -> string(n)[1] == string(s)[1], long_names)) for s in sidarthe[:,:sname])
-
-inits = map(s -> ModelingToolkit.defaults(sys)[eval(:(@nonamespace sys.$(name_mapping[s])))], sidarthe[:,:sname])
-
-paramd_sidarthe = LabelledReactionNet{Float64, Float64}(sidarthe, zip(sidarthe[:,:sname], inits), zip(sidarthe[:,:tname], params))
-
-prob = ODEProblem(paramd_sidarthe)
-sol = solve(prob, Tsit5())
-plot(sol)
-```
-
 ## Question 2
+
+### Form SIDARTHE-V model
 
 This forms SIDARTHE-V by manually adding the V state and vax transition. It compares the models via maximum common subacset, plotting the common subgraph (the original SIDARTHE), the negation (the new transition and vax state), and the complement (the new transition from susceptible to vax).
 
@@ -304,136 +278,22 @@ AlgebraicPetri.Graph(dom(hom(negate(sidarthe_sub))))
 ```
 
 ```@example scenario2
-AlgebraicPetri.Graph(dom(hom(~(sidarthe_sub))))
+sysv = ODESystem(sidarthe_v)
+u0valsv = [u0vals; 0.0]  # 0 vaccinated initially
+paramvalsv = [paramvals; 0.0025]
+defaultsmapv = Dict(Num(param) => val for (param, val) in zip(parameters(sysv), paramvalsv))
+@unpack beta, gamma, delta, alpha, epsilon, kappa, sigma, rho, xi, mu, tau, lambda, eta, nu, zeta, theta, vax = sysv
+phi = vax
 ```
 
 ```@example scenario2
-sys_sidarthe_v = ODESystem(sidarthe_v)
-```
-
-
-### Ingest SIDARTHE-V
-
-This is a handwritten verison of the SIDARTHE-V model, built from the exported SIDARTHE SBML and then manually handcorrected to be
-the SIDARTHE-V model. This should swap to the TA1/TA2 model form when available.
-
-```@example scenario2
-sysv = eval(quote
-                var"##iv#608" = (@variables(t))[1]
-                var"##sts#609" = (collect)(@variables(Infected(t), Healed(t), Extinct(t),
-                                                      Diagnosed(t), Ailing(t),
-                                                      Recognized(t), Susceptible(t),
-                                                      Threatened(t), Vaccinated(t),
-                                                      alpha(t), epsilon(t), gamma(t),
-                                                      beta(t), delta(t), mu(t), nu(t),
-                                                      lambda(t), rho(t), kappa(t), xi(t),
-                                                      sigma(t), zeta(t), eta(t)))
-                var"##ps#610" = (collect)(@parameters(ModelValue_21, epsilon_modifier, tau,
-                                                      theta, ModelValue_19, ModelValue_20,
-                                                      Event_trigger_Fig4b,
-                                                      Event_trigger_Fig3d, ModelValue_16,
-                                                      Event_trigger_Fig3b, alpha_modifier,
-                                                      Event_trigger_Fig4d, ModelValue_17,
-                                                      ModelValue_18, Italy, tau1, phi))
-                var"##eqs#611" = [(~)((Differential(t))(Infected),
-                                      (+)((*)((+)((/)((*)(Infected, alpha), Italy),
-                                                  (/)((*)(Diagnosed, beta), Italy),
-                                                  (/)((*)(Ailing, gamma), Italy),
-                                                  (/)((*)(Recognized, delta), Italy)),
-                                              Susceptible), (*)(-1 // 1, Infected, epsilon),
-                                          (*)(-1 // 1, Infected, lambda),
-                                          (*)(-1 // 1, Infected, zeta)))
-                                  (~)((Differential(t))(Healed),
-                                      (+)((*)(Ailing, kappa), (*)(Diagnosed, rho),
-                                          (*)(Infected, lambda), (*)(Recognized, xi),
-                                          (*)(Threatened, sigma)))
-                                  (~)((Differential(t))(Extinct),
-                                      (*)(tau, Threatened) + tau1 * Recognized)
-                                  (~)((Differential(t))(Diagnosed),
-                                      (+)((*)(Infected, epsilon),
-                                          (*)(-1 // 1, Diagnosed, eta),
-                                          (*)(-1 // 1, Diagnosed, rho)))
-                                  (~)((Differential(t))(Ailing),
-                                      (+)((*)(Infected, zeta), (*)(-1 // 1, theta, Ailing),
-                                          (*)(-1 // 1, Ailing, kappa),
-                                          (*)(-1 // 1, Ailing, mu)))
-                                  (~)((Differential(t))(Recognized),
-                                      (+)((*)(theta, Ailing), (*)(Diagnosed, eta),
-                                          (*)(-1 // 1, Recognized, nu),
-                                          (*)(-1 // 1, Recognized, xi)))
-                                  (~)((Differential(t))(Susceptible),
-                                      (*)((+)((/)((*)(-1, Infected, alpha), Italy),
-                                              (/)((*)(-1, Diagnosed, beta), Italy),
-                                              (/)((*)(-1, Ailing, gamma), Italy),
-                                              (/)((*)(-1, Recognized, delta), Italy)) -
-                                          phi * Susceptible,
-                                          Susceptible))
-                                  (~)((Differential(t))(Threatened),
-                                      (+)((*)(Ailing, mu), (*)(Recognized, nu),
-                                          (*)(-1 // 1, tau, Threatened),
-                                          (*)(-1 // 1, Threatened, sigma)))
-                                  Differential(t)(Vaccinated) ~ phi * Susceptible
-                                  (~)((Differential(t))(alpha), -0.0);
-                                  (~)((Differential(t))(epsilon), -0.0);
-                                  (~)((Differential(t))(gamma), -0.0);
-                                  (~)((Differential(t))(beta), -0.0);
-                                  (~)((Differential(t))(delta), -0.0);
-                                  (~)((Differential(t))(mu), -0.0);
-                                  (~)((Differential(t))(nu), -0.0);
-                                  (~)((Differential(t))(lambda), -0.0);
-                                  (~)((Differential(t))(rho), -0.0);
-                                  (~)((Differential(t))(kappa), -0.0);
-                                  (~)((Differential(t))(xi), -0.0);
-                                  (~)((Differential(t))(sigma), -0.0);
-                                  (~)((Differential(t))(zeta), -0.0);
-                                  (~)((Differential(t))(eta), -0.0)]
-                var"##defs#612" = (Dict)((Pair)(delta, 0.011), (Pair)(xi, 0.017),
-                                         (Pair)(Diagnosed, 3.33333333e-7),
-                                         (Pair)(Event_trigger_Fig3b, 0.0),
-                                         (Pair)(Extinct, 0.0), (Pair)(kappa, 0.017),
-                                         (Pair)(zeta, 0.125), (Pair)(eta, 0.125),
-                                         (Pair)(nu, 0.027), (Pair)(Healed, 0.0),
-                                         (Pair)(Infected, 3.33333333e-6),
-                                         (Pair)(ModelValue_16, 0.0),
-                                         (Pair)(alpha_modifier, 1.0), (Pair)(Italy, 1.0),
-                                         (Pair)(Event_trigger_Fig3d, 0.0),
-                                         (Pair)(ModelValue_20, 1.0), (Pair)(sigma, 0.017),
-                                         (Pair)(Threatened, 0.0), (Pair)(lambda, 0.034),
-                                         (Pair)(alpha, 0.57),
-                                         (Pair)(Event_trigger_Fig4b, 0.0),
-                                         (Pair)(ModelValue_17, 0.0),
-                                         (Pair)(Event_trigger_Fig4d, 0.0),
-                                         (Pair)(Susceptible, 0.9999963),
-                                         (Pair)(beta, 0.011),
-                                         (Pair)(Recognized, 3.33333333e-8),
-                                         (Pair)(rho, 0.034), (Pair)(mu, 0.017),
-                                         (Pair)(epsilon, 0.171),
-                                         (Pair)(Ailing, 1.66666666e-8),
-                                         (Pair)(gamma, 0.456), (Pair)(ModelValue_19, 0.0),
-                                         (Pair)(ModelValue_21, 1.0), (Pair)(theta, 0.371),
-                                         (Pair)(epsilon_modifier, 1.0), (Pair)(tau, 0.01),
-                                         (Pair)(ModelValue_18, 0.0),
-                                         Vaccinated => 0,
-                                         tau1 => 0.0200,
-                                         phi => 0.0025)
-                var"##iv#613" = (@variables(t))[1]
-                (ODESystem)(var"##eqs#611", var"##iv#613", var"##sts#609", var"##ps#610";
-                            defaults = var"##defs#612", name = Symbol("##SBML#530"),
-                            checks = false)
-            end)
-# todo set the event flags
-# todo validate the new params 
-sysv = complete(sysv)
-```
-
-```@example scenario2
-probv = ODEProblem(sysv, [], (0, 100))
+probv = ODEProblem(sysv, u0valsv, (0, 100), paramvalsv)
 solv = solve(probv, Tsit5())
 plot(solv)
 ```
 
 ```@example scenario2
-plot(solv, idxs = [og_states; Vaccinated])
+plot(solv, idxs = [og_states; @nonamespace(sysv.V)])
 ```
 
 ```@example scenario2
@@ -465,11 +325,10 @@ xmax, xmaxval = get_max_t(probv, sum(idart))
 > constraints: θ >= 2* ε, and τ1 = (1/3)*τ2.
 
 ```@example scenario2
-# TODO: double check. I am assuming our `tau` is `tau1` and `tau1` is `tau2`.
-defs_v2 = deepcopy(ModelingToolkit.defaults(sysv))
-defs_v2[sysv.tau1] = defs[tau]
-defs_v2[sysv.tau] = defs[tau] / 3
-defs_v2[sysv.phi] = 0
+# TODO: tau1 and tau2?
+defs_v2 = copy(defaultsmapv)
+defs_v2[tau] = defaultsmapv[tau] / 3
+defs_v2[vax] = 0
 probv2 = remake(probv; p = defs_v2)
 solv2 = solve(probv2)
 plot(solv2)
@@ -503,7 +362,7 @@ hline!([1 / 3], lab = "limit")
 
 ```@example scenario2
 intervention_p = phi # Need to figure out what these should be
-cost = intervention_p - defs_v2[intervention_p]
+cost = intervention_p - defaultsmapv[intervention_p]
 opt_p, solv2_s, ret = optimal_parameter_intervention_for_threshold(probv2,
                                                                    threshold_observable,
                                                                    0.33,
@@ -545,14 +404,14 @@ as b.i.
 
 ```@example scenario2
 D = 20
-R0 = sysv.alpha * sysv.Susceptible * D # double check
+R0 = alpha * @nonamespace(sysv.S) * D # double check
 plot(solv2, idxs = [R0])
 ```
 
 ```@example scenario2
-intervention_parameters = [sysv.theta => (2 * defs_v2[sysv.eta], 1) # 𝜃 >= 2 * 𝜀
-                           sysv.eta => (0, defs_v2[sysv.theta] / 2)
-                           sysv.phi => (0, 1)]
+intervention_parameters = [theta => (2 * defs_v2[eta], 1) # 𝜃 >= 2 * 𝜀
+                           eta => (0, defs_v2[theta] / 2)
+                           phi => (0, 1)]
 opt_results = map(intervention_parameters) do (intervention_p, bounds)
     cost = intervention_p - defs_v2[intervention_p]
     optimal_parameter_intervention_for_reach(probv2,
