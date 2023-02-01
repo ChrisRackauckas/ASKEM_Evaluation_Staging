@@ -236,21 +236,21 @@ without having to make any other changes, we can change our minimization to the 
 `(Infected + Diagnosed + Ailing + Recognized + Threatened) / sum(states(sys))` required by the scenario.
 
 However, this scenario also required making a modeling choice. In order to perform this minimization we needed, we needed
-to define the comparative cost between the different intervention parameters, `eta` and `theta`. We have made the assumption
+to define the comparative cost between the different intervention parameters, `epsilon` and `theta`. We have made the assumption
 that the cost of interventions on these two parameters are the same, and have made requests to TA1/TA2 about the interpretation
 of these parameters for further information.
 
 ```@example scenario2
 threshold_observable = (Infected + Diagnosed + Ailing + Recognized + Threatened) /
                        sum(states(sys))
-cost = -(eta + theta)
-ineq_cons = [2 * eta - theta]
+cost = -(epsilon + theta)
+ineq_cons = [2 * epsilon - theta]
 opt_p, sol_opt_p, ret = optimal_parameter_threshold(probne, threshold_observable,
                                                     0.33,
-                                                    cost, [eta, theta],
+                                                    cost, [epsilon, theta],
                                                     [0.0, 0.0],
                                                     3 .* [
-                                                        ModelingToolkit.defaults(sys)[eta],
+                                                        ModelingToolkit.defaults(sys)[epsilon],
                                                         ModelingToolkit.defaults(sys)[theta],
                                                     ];
                                                     maxtime = 60,
