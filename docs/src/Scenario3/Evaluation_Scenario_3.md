@@ -113,9 +113,9 @@ This looks very good and matches the original data, confirming that the inverse 
 This expands the original SIR model to explore a model space comprising SIRD, SIRH, and SIRHD.
 ```@example evalscenario3
 using Catlab.CategoricalAlgebra
-sird = read_json_acset(LabelledPetriNet,"sird.json")
-sirh = read_json_acset(LabelledPetriNet,"sirh.json")
-sirhd = read_json_acset(LabelledPetriNet,"sirhd.json")
+sird = read_json_acset(LabelledPetriNet,joinpath(@__DIR__,"sird.json"))
+sirh = read_json_acset(LabelledPetriNet,joinpath(@__DIR__,"sirh.json"))
+sirhd = read_json_acset(LabelledPetriNet,joinpath(@__DIR__,"sirhd.json"))
 sirhd_sys = ODESystem(sirhd)
 tspan = (0.0, 40.0)
 u0 = [990, 10, 0, 0, 0]
@@ -212,7 +212,7 @@ norm(solve(_prob2, saveat = t_test)[R] - data_test[3][2])
 
 This expands the previous SIRHD model to add vaccination.
 ```@example evalscenario3
-sirhd_vax = read_json_acset(LabelledPetriNet,"sirhd_vax.json")
+sirhd_vax = read_json_acset(LabelledPetriNet,joinpath(@__DIR__,"sirhd_vax.json"))
 ```
 
 Question 3 is the same analysis as questions 1 and 2 done on a model with vaccination added. In order to build unit tests for
@@ -260,7 +260,7 @@ The unit test analysis code is as follows:
 
 This expands the previous SIRHD-Vax model to stratify by age.
 ```@example evalscenario3
-sirhd_vax_age16 = read_json_acset(LabelledPetriNet,"sirhd_vax_age16.json")
+sirhd_vax_age16 = read_json_acset(LabelledPetriNet,joinpath(@__DIR__,"sirhd_vax_age16.json"))
 ```
 
 Question 4 is the same analysis as questions 1, 2, and 3 on a model with age-stratification added. In order to build unit tests for
@@ -279,9 +279,9 @@ TA2.
 
 This expands the previous SIRHD model to add reinfection, and restratifies with vaccination and age.
 ```@example evalscenario3
-sirhd_renew = read_json_acset(LabelledPetriNet,"sirhd_renew.json")
-sirhd_renew_vax = read_json_acset(LabelledPetriNet,"sirhd_renew_vax.json")
-sirhd_renew_vax_age16 = read_json_acset(LabelledPetriNet,"sirhd_renew_vax_age16.json")
+sirhd_renew = read_json_acset(LabelledPetriNet,joinpath(@__DIR__,"sirhd_renew.json"))
+sirhd_renew_vax = read_json_acset(LabelledPetriNet,joinpath(@__DIR__,"sirhd_renew_vax.json"))
+sirhd_renew_vax_age16 = read_json_acset(LabelledPetriNet,joinpath(@__DIR__,"sirhd_renew_vax_age16.json"))
 ```
 
 Question 5 is the same analysis as questions 1, 2, 3, and 4 on a model with reinfection added. In order to build unit tests for
