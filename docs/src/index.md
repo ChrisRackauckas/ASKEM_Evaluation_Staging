@@ -1,13 +1,52 @@
 # DARPA ASKEM 6 Month Evaluations
 
-## Installation
+## Reproducing the Results
 
-To install EasyModelAnalysis.jl, use the Julia package manager:
+This system is a fully reproducer builder that generates the results from scratch. It downloads Julia,
+downloads the packages, builds the results, and then hosts them at the website 
+https://chrisrackauckas.github.io/ASKEM_Evaluation_Staging/dev/.
+
+### Running the Builder
+
+The simplest way to reproduce the results is to run the builder by opening a PR. The `Documentation` job is the
+job generating the results, and if successful (green) then its artifacts are pushed to the repository on merge.
+
+### Running Locally via the `make.jl` Script
+
+To run locally, start by downloading the Github repository and set the current directory to 
+`ASKEM_Evaluation_Staging/docs`. Then open Julia and run:
 
 ```julia
+cd("to the ASKEM_Evaluation_Staging/docs directory")
+
+# Setup packages
 using Pkg
-Pkg.add("https://github.com/SciML/EasyModelAnalysis.jl")
+Pkg.activate(".") 
+Pkg.instantiate()
+
+# Run the build script
+include("make.jl")
 ```
+
+The outputs will be generated into the `ASKEM_Evaluation_Staging/docs/build` directory and can be opened in 
+a web browser.
+
+### Running Individual Files
+
+The individual files can be built as well by running the code in the Markdown files. We recommend grabbing the
+packages using the Project.toml via:
+
+```julia
+cd("to the ASKEM_Evaluation_Staging/docs directory")
+
+# Setup packages
+using Pkg
+Pkg.activate(".") 
+Pkg.instantiate()
+```
+
+Then open up the .md and run the code! If using the [Julia VS Code plugin](https://code.visualstudio.com/docs/languages/julia)
+then inline evaluation will directly work.
 
 ## Contributing
 

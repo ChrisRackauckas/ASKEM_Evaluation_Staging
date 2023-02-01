@@ -277,9 +277,9 @@ bar(1:length(pop_belg), collect(pop_belg), permute=(:x, :y), xlabel="Age (5 year
 # Set up model
 # Per MITRE: Assume that the same fixed fraction of the population in each stratum is initially infected. Here: 0.01%
 pop_assumption(_, nn) = nn * 0.0001
-(C, sys_belg) = make_statified_model(pop_belg; pop_assumption)
+(Cbelg, sys_belg) = make_statified_model(pop_belg; pop_assumption)
 
-prob = ODEProblem(sys_belg, [], (0, tf), vec(C .=> cm_belg))
+prob = ODEProblem(sys_belg, [], (0, tf), vec(Cbelg .=> cm_belg))
 sol = solve(prob)
 plot(sol, leg = :topright)
 ```
@@ -295,13 +295,13 @@ hm = heatmap(cm_india, yflip=true)
 
 # Load India population distribution
 pop_india = values(CSV.read("data/2016_india_population_by_age.csv", DataFrame)[1, 3:18])
-bar_india = bar(1:length(pop_belg), collect(pop_belg), permute=(:x, :y), xlabel="Age (5 year buckets)", ylabel="Total # of people", leg=:none)
+bar_india = bar(1:length(pop_india), collect(pop_india), permute=(:x, :y), xlabel="Age (5 year buckets)", ylabel="Total # of people", leg=:none)
 plot(hm, bar_india)
 ```
 
 ```@example scenario1
-(C, sys_india) = make_statified_model(pop_india; pop_assumption)
-prob = ODEProblem(sys_india, [], (0, tf), vec(C .=> cm_india))
+(Cindia, sys_india) = make_statified_model(pop_india; pop_assumption)
+prob = ODEProblem(sys_india, [], (0, tf), vec(Cindia .=> cm_india))
 sol = solve(prob)
 plot(sol, leg = :topright)
 ```
@@ -318,7 +318,7 @@ function cm_school(xfs, country)
 end # no school
 
 cm_belgium_school_closure = cm_school(xfs1, "Belgium")
-prob = ODEProblem(sys_belg, [], (0, tf), vec(C .=> cm_belgium_school_closure))
+prob = ODEProblem(sys_belg, [], (0, tf), vec(Cbelg .=> cm_belgium_school_closure))
 sol = solve(prob)
 plot(sol, leg = :topright)
 ```
@@ -334,7 +334,7 @@ function cm_social_dist(xfs, country)
 end
 
 cm_belgium_social_dist = cm_social_dist(xfs1, "Belgium")
-prob = ODEProblem(sys_belg, [], (0, tf), vec(C .=> cm_belgium_social_dist))
+prob = ODEProblem(sys_belg, [], (0, tf), vec(Cbelg .=> cm_belgium_social_dist))
 sol = solve(prob)
 plot(sol, leg = :topright)
 ```
