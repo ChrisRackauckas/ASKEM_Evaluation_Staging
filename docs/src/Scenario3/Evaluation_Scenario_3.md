@@ -212,7 +212,7 @@ The inverse problem solving is done via the same functionality as before.
 
 ```@example evalscenario3
 fitparams2 = global_datafit(prob2, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
-                            t_train, data_train)
+                            t_train, data_train) # These are not all the parameters, should add more.
 ```
 
 Notice that this fit is not as good. That is to be expected because it's fitting the SIRHD model on the
@@ -239,6 +239,49 @@ This checks out.
 
 #### Data Ask
 
+```@example evalscenario3
+data_train = [S => N_total .- df_train.I .-  df_train.R, I => df_train.I, R => df_train.R, H => df_train.H, D => df_train.D]
+data_test = [S => N_total .- df_test.I .- df_test.R, I => df_test.I, R => df_test.R, H => df_test.H, D => df_test.D]
+
+u0s = [S => N_total - df_train.I[1] - df_train.R[1], I => df_train.I[1], R => df_train.R[1], H => df_train.H[1], D => df_train.D[1]]
+_prob2 = remake(prob2, u0 = u0s, tspan = (t_train[1], t_train[end]))
+
+fitparams2 = global_datafit(_prob2, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
+                            t_train, data_train) # These are not all the parameters, should add more.
+```
+```@example evalscenario3
+# Plot training fit
+_prob2 = remake(_prob2, p = fitparams2)
+sol = solve(_prob2, saveat = t_train);
+plot(sol, idxs = S)
+plot!(t_train, data_train[1][2])
+
+plot!(sol, idxs = I)
+plot!(t_train, data_train[2][2])
+
+plot!(sol, idxs = R)
+p = plot!(t_train, data_train[3][2])
+```
+```@example evalscenario3
+savefig(p, "train_fit_S3_Q2.png")
+```
+```@example evalscenario3
+u0s = [S => N_total - df_test.I[1] - df_test.R[1], I => df_test.I[1], R => df_test.R[1]]
+_prob2 = remake(_prob2, p = fitparams, u0=u0s, tspan = (t_test[1], t_test[end]))
+sol = solve(_prob2, saveat = t_test);
+plot(sol, idxs = S)
+plot!(t_test, data_test[1][2])
+
+plot!(sol, idxs = I)
+plot!(t_test, data_test[2][2])
+
+plot!(sol, idxs = R)
+p = plot!(t_test, data_test[3][2])
+```
+```@example evalscenario3
+savefig(p, "test_fit_S3_Q2.png")
+```
+
 * Daily time series on number of patients admitted to the hospital all US
 * time series for mortality
 * 10 gig file on whether hospitalized or not => percentage for the difference in parameters
@@ -261,7 +304,9 @@ norm(solve(_prob, saveat = t_test)[R] - data_test[3][2])
 ```@example evalscenario3
 norm(solve(_prob2, saveat = t_test)[S] - data_test[1][2]) +
 norm(solve(_prob2, saveat = t_test)[I] - data_test[2][2]) +
-norm(solve(_prob2, saveat = t_test)[R] - data_test[3][2])
+norm(solve(_prob2, saveat = t_test)[R] - data_test[3][2]) +
+norm(solve(_prob2, saveat = t_test)[H] - data_test[4][2]) +
+norm(solve(_prob2, saveat = t_test)[D] - data_test[5][2])
 ```
 
 ## Question 3: Add Vaccinations
