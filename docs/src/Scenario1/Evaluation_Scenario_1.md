@@ -172,7 +172,7 @@ prob = ODEProblem(sys, [], (0, tf), vec(C .=> 0.5 * uniform_matrix))
 sol = solve(prob)
 plt_b4 = plot(sol, leg = :topright, title = "iv")
 
-prob = ODEProblem(sys, [], (0, tf), vec(C .=> scaling * contact_matrix))
+prob = ODEProblem(sys, [], (0, tf), vec(C .=> scaling * uniform_matrix))
 sol = solve(prob)
 plt_b5 = plot(sol, leg = :topright, title = "v")
 plot(plt_b1, plt_b2, plt_b3, plt_b4, plt_b5, size = (1000, 500))
