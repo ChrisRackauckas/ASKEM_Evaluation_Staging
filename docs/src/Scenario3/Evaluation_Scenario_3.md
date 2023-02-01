@@ -132,7 +132,7 @@ plot(map(data_train) do (var, num)
 end..., dpi = 300)
 ```
 ```@example evalscenario3
-savefig(p, "train_fit_S3_Q1.png")
+savefig("train_fit_S3_Q1.png")
 ```
 
 # Plot test fit
@@ -148,7 +148,7 @@ plot(map(data_test) do (var, num)
 end..., dpi = 300)
 ```
 ```@example evalscenario3
-savefig(p, "test_fit_S3_Q1.png")
+savefig("test_fit_S3_Q1.png")
 ```
 
 
@@ -232,7 +232,7 @@ plot(map(data_train) do (var, num)
 end..., dpi = 300)
 ```
 ```@example evalscenario3
-savefig(p, "train_fit_S3_Q2.png")
+savefig("train_fit_S3_Q2.png")
 ```
 ```@example evalscenario3
 u0s = [
@@ -247,7 +247,7 @@ plot(map(data_test) do (var, num)
 end..., dpi = 300)
 ```
 ```@example evalscenario3
-savefig(p, "test_fit_S3_Q2.png")
+savefig("test_fit_S3_Q2.png")
 ```
 
 * Daily time series on number of patients admitted to the hospital all US
@@ -479,7 +479,7 @@ plot(map(data_train) do (var, num)
 end..., dpi = 300)
 ```
 ```@example evalscenario3
-savefig(p, "train_fit_S3_Q5.png")
+savefig("train_fit_S3_Q5.png")
 ```
 ```@example evalscenario3
 u0s = [
@@ -494,7 +494,7 @@ plot(map(data_test) do (var, num)
 end..., dpi = 300)
 ```
 ```@example evalscenario3
-savefig(p, "test_fit_S3_Q5.png")
+savefig("test_fit_S3_Q5.png")
 ```
 
 #### Data Asks
