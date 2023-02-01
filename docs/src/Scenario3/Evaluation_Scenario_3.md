@@ -465,12 +465,13 @@ param_bounds = [
     ideath => [0.0, 5.0]
     hosp => [0.0, 5.0]
     hrec => [0.0, 5.0]
+    renew => [0.0, 1.0]
 ]
-fitparams2 = global_datafit(_prob5, param_bounds, t_train, data_train, maxiters = 500_000)
+fitparams5 = global_datafit(_prob5, param_bounds, t_train, data_train, maxiters = 500_000)
 ```
 ```@example evalscenario3
 # Plot training fit
-_prob5_train = remake(_prob5, p = fitparams2)
+_prob5_train = remake(_prob5, p = fitparams5)
 sol = solve(_prob5_train, saveat = t_train);
 plot(map(data_train) do (var, num)
     plot(sol, idxs = var)
@@ -485,7 +486,7 @@ u0s = [
 S => N_total - df_test.I[1] - df_test.R[1] - df_test.H[1] - df_test.D[1],
 I => df_test.I[1], R => df_test.R[1], H => df_test.H[1], D => df_test.D[1]
 ]
-_prob5_test = remake(_prob5, p = fitparams2, u0=u0s, tspan = (t_test[1], t_test[end]))
+_prob5_test = remake(_prob5, p = fitparams5, u0=u0s, tspan = (t_test[1], t_test[end]))
 sol = solve(_prob5_test, saveat = t_test);
 plot(map(data_test) do (var, num)
     plot(sol, idxs = var)
