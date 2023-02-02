@@ -126,36 +126,29 @@ fitparams = global_datafit(_prob, [inf => [0, 1.0], rec => [0.0, 1.0]], t_train,
 _prob_train = remake(_prob, p = fitparams)
 sol = solve(_prob_train, saveat = t_train);
 
-cs = Plots.distinguishable_colors(10)[end-5:end]
-plot(sol, idxs = S, color = cs[1])
-plot!(t_train, data_train[1][2], lab = "S_train", color = cs[2])
-
-plot!(sol, idxs = I, color = cs[3])
-plot!(t_train, data_train[2][2], lab = "I_train", color = cs[4])
-
-plot!(sol, idxs = R, color = cs[5])
-p = plot!(t_train, data_train[3][2], lab = "R_train", color = cs[6], dpi=300)
+plot(map(data_train) do (var, num)
+    plot(sol, idxs = var)
+    plot!(t_train, num)
+end..., dpi = 300)
 ```
 ```@example evalscenario3
-savefig(p, "train_fit_S3_Q1.png")
+savefig("train_fit_S3_Q1.png")
 ```
 
 # Plot test fit
 ```@example evalscenario3
+# Plot testing fit
 u0s = [S => N_total - df_test.I[1] - df_test.R[1], I => df_test.I[1], R => df_test.R[1]]
 _prob_test = remake(_prob, p = fitparams, u0=u0s, tspan = (t_test[1], t_test[end]))
 sol = solve(_prob_test, saveat = t_test);
-plot(sol, idxs = S, color = cs[1])
-plot!(t_test, data_test[1][2], lab = "S_test", color = cs[2])
 
-plot!(sol, idxs = I, color = cs[3])
-plot!(t_test, data_test[2][2], lab = "I_test", color = cs[4])
-
-plot!(sol, idxs = R, color = cs[5])
-p = plot!(t_test, data_test[3][2], lab = "R_test", color = cs[6], dpi=300)
+plot(map(data_test) do (var, num)
+    plot(sol, idxs = var)
+    plot!(t_test, num)
+end..., dpi = 300)
 ```
 ```@example evalscenario3
-savefig(p, "test_fit_S3_Q1.png")
+savefig("test_fit_S3_Q1.png")
 ```
 
 
@@ -199,39 +192,7 @@ sirhd_sol = solve(sirhd_prob)
 plot(sirhd_sol)
 ```
 
-Question 2 involves doing the same analysis as question one but on the SIR model with hopsitalizations and deaths included.
-To establish unit tests, we first showcase building the model and solving inverse problems using the ModelingToolkit version
-of the model.
-
-The inverse problem solving is done via the same functionality as before.
-
-```@example evalscenario3
-param_bounds = [inf, rec, ideath, death, hosp, hrec] .=> ([0.01, 10.0],)
-_prob = remake(sirhd_prob, u0 = u0s, tspan = (t_train[1], t_train[end]), p = [N => N_total])
-fitparams2 = global_datafit(_prob, param_bounds, t_train, data_train, maxiters = 200_000)
-```
-
-Notice that this fit is not as good. That is to be expected because it's fitting the SIRHD model on the
-SIR model's output data. Thus we should expect that it also does not forecast entirely correctly.
-
-```@example evalscenario3
-sirhd_prob2 = remake(_prob, p = fitparams2)
-sol = solve(sirhd_prob2, saveat = t_test);
-plot(sol, idxs = S)
-plot!(t_test, data_test[1][2])
-```
-
-```@example evalscenario3
-plot(sol, idxs = I)
-plot!(t_test, data_test[2][2])
-```
-
-```@example evalscenario3
-plot(sol, idxs = R)
-plot!(t_test, data_test[3][2])
-```
-
-This checks out.
+Question 2 involves doing the same analysis as question one but on the SIR model with hospitalizations and deaths included.
 
 #### Data Ask
 
@@ -249,54 +210,44 @@ u0s = [
 S => N_total - df_train.I[1] - df_train.R[1] - df_train.H[1] - df_train.D[1],
 I => df_train.I[1], R => df_train.R[1], H => df_train.H[1], D => df_train.D[1]
 ]
-_prob2 = remake(sirhd_prob2, u0 = u0s, tspan = (t_train[1], t_train[end]), p = [N => N_total])
+_prob2 = remake(sirhd_prob, u0 = u0s, tspan = (t_train[1], t_train[end]), p = [N => N_total])
 
 param_bounds = [
-    inf => [0.0, 70]
-    rec => [0.0, 5.0]
+    inf => [0.0, 1.0]
+    rec => [0.0, 1.0]
     death => [0.0, 5.0]
     ideath => [0.0, 5.0]
-    hosp => [0.0, 10.0]
-    hrec => [0.0, 10.0]
+    hosp => [0.0, 5.0]
+    hrec => [0.0, 5.0]
 ]
-fitparams2 = global_datafit(_prob2, param_bounds, t_train, data_train, maxiters = 200_000)
+fitparams2 = global_datafit(_prob2, param_bounds, t_train, data_train, maxiters = 500_000)
 ```
 ```@example evalscenario3
 # Plot training fit
 _prob2_train = remake(_prob2, p = fitparams2)
 sol = solve(_prob2_train, saveat = t_train);
-
-plot(sol, idxs = S, color = cs[1])
-plot!(t_train, data_train[1][2], lab = "S_train", color = cs[2])
-
-plot!(sol, idxs = I, color = cs[3])
-plot!(t_train, data_train[2][2], lab = "I_train", color = cs[4])
-
-plot!(sol, idxs = R, color = cs[5])
-p = plot!(t_train, data_train[3][2], lab = "R_train", color = cs[6], dpi=300)
+plot(map(data_train) do (var, num)
+    plot(sol, idxs = var)
+    plot!(t_train, num)
+end..., dpi = 300)
 ```
 ```@example evalscenario3
-savefig(p, "train_fit_S3_Q2.png")
+savefig("train_fit_S3_Q2.png")
 ```
 ```@example evalscenario3
 u0s = [
 S => N_total - df_test.I[1] - df_test.R[1] - df_test.H[1] - df_test.D[1],
 I => df_test.I[1], R => df_test.R[1], H => df_test.H[1], D => df_test.D[1]
 ]
-_prob2 = remake(_prob2, p = fitparams, u0=u0s, tspan = (t_test[1], t_test[end]))
-sol = solve(_prob2, saveat = t_test);
-
-plot(sol, idxs = S, color = cs[1])
-plot!(t_test, data_test[1][2], lab = "S_test", color = cs[2])
-
-plot!(sol, idxs = I, color = cs[3])
-plot!(t_test, data_test[2][2], lab = "I_test", color = cs[4])
-
-plot!(sol, idxs = R, color = cs[5])
-p = plot!(t_test, data_test[3][2], lab = "R_test", color = cs[6], dpi=300)
+_prob2_test = remake(_prob2, p = fitparams2, u0=u0s, tspan = (t_test[1], t_test[end]))
+sol = solve(_prob2_test, saveat = t_test);
+plot(map(data_test) do (var, num)
+    plot(sol, idxs = var)
+    plot!(t_test, num)
+end..., dpi = 300)
 ```
 ```@example evalscenario3
-savefig(p, "test_fit_S3_Q2.png")
+savefig("test_fit_S3_Q2.png")
 ```
 
 * Daily time series on number of patients admitted to the hospital all US
@@ -338,48 +289,31 @@ sirhd_vax_sys = complete(sirhd_vax_sys)
 names = string.(ModelingToolkit.getname.(states(sirhd_vax_sys)))
 sts_names = Symbol.(getindex.(names, 6), :_, getindex.(names, 11))
 @variables t
+@parameters N
 sts = map(n->variable(n, T = SymbolicUtils.FnType)(t), sts_names)
 names = split.(string.(parameters(sirhd_vax_sys)), "\"")
 ps_names = Symbol.(getindex.(split.(getindex.(names, 3), "\\"), 1), :_,
                    getindex.(split.(getindex.(names, 5), "\\"), 1))
 ps = map(n->toparam(variable(n)), ps_names)
+nps = findall(x->occursin("inf", string(x)), ps)
+ups = findall(x->!occursin("inf", string(x)), ps)
 subs = [
-    parameters(sirhd_vax_sys) .=> ps
+    parameters(sirhd_vax_sys)[nps] .=> ps[nps] ./ N
+    parameters(sirhd_vax_sys)[ups] .=> ps[ups]
     states(sirhd_vax_sys) .=> sts
 ]
 sirhd_vax_sys = substitute(sirhd_vax_sys, subs)
 @unpack S_U, I_U, R_U, H_U, D_U, S_V, I_V, R_V, H_V, D_V = sirhd_vax_sys
+S, I, R, H, D = S_U, I_U, R_U, H_U, D_U
+Sv, Iv, Rv, Hv, Dv = S_V, I_V, R_V, H_V, D_V
 @unpack id_vax, inf_infuu, inf_infuv, hosp_id, ideath_id, rec_id, hrec_id, death_id, inf_infvu, inf_infvv = sirhd_vax_sys
+sys3 = sirhd_vax_sys
+prob3 = ODEProblem(sys3, nothing, (0, 1.0))
 ```
 
 Question 3 is the same analysis as questions 1 and 2 done on a model with vaccination added. In order to build unit tests for
 the analysis and functionality, we started by building the model with vaccine by hand, awaiting a swap to the version from
 TA2.
-
-```@example evalscenario3
-@parameters t β=0.1 c=10.0 γ=0.25 ρ=0.1 h=0.1 d=0.1 r=0.1 v=0.1
-@parameters t β2=0.1 c2=10.0 ρ2=0.1 h2=0.1 d2=0.1 r2=0.1
-@variables S(t)=990.0 I(t)=10.0 R(t)=0.0 H(t)=0.0 D(t)=0.0
-@variables Sv(t)=990.0 Iv(t)=10.0 Rv(t)=0.0 Hv(t)=0.0 Dv(t)=0.0
-@variables I_total(t)
-
-∂ = Differential(t)
-N = S + I + R + H + D + Sv + Iv + Iv + Hv + Dv # This is recognized as a derived variable
-eqs = [∂(S) ~ -β * c * I_total / N * S - v * Sv,
-    ∂(I) ~ β * c * I_total / N * S - γ * I - h * I - ρ * I,
-    ∂(R) ~ γ * I + r * H,
-    ∂(H) ~ h * I - r * H - d * H,
-    ∂(D) ~ ρ * I + d * H,
-    ∂(Sv) ~ -β2 * c2 * I_total / N * Sv + v * Sv,
-    ∂(Iv) ~ β2 * c2 * I_total / N * Sv - γ * I - h2 * I - ρ2 * I,
-    ∂(Rv) ~ γ * I + r2 * H,
-    ∂(Hv) ~ h2 * I - r2 * H - d2 * H,
-    ∂(Dv) ~ ρ2 * I + d2 * H, I_total ~ I + Iv,
-];
-
-@named sys3 = ODESystem(eqs)
-sys3 = structural_simplify(sys3)
-```
 
 #### Data Asks
 
@@ -400,6 +334,7 @@ vac_rate = df_train.H_vac[1]/(df_train.H_vac[1]+df_train.H_unvac[1])
 # so we assume that the vaccination rate is the same for all compartments.
 ```
 
+```@example evalscenario3
 u0s = [S => (1-vac_rate)*(N_total-df_train.I[1]-df_train.R[1]-df_train.H[1]-df_train.D[1]),
        I => (1-vac_rate) * df_train.I[1],
        R => (1-vac_rate) * df_train.R[1],
@@ -411,11 +346,51 @@ u0s = [S => (1-vac_rate)*(N_total-df_train.I[1]-df_train.R[1]-df_train.H[1]-df_t
        Hv => df_train.H_vac[1],
        Dv => df_train.D_vac[1]
        ]
-_prob3 = remake(prob3, u0 = u0s, tspan = (t_train[1], t_train[end]))
+_prob3 = remake(prob3, u0 = u0s, tspan = (t_train[1], t_train[end]), p = [ps .=> 0.1; N => N_total])
 
-fitparams3 = global_datafit(_prob3, [β => [0.03, 0.15], c => [9.0, 13.0], γ => [0.05, 0.5]],
-                            t_train, data_train) # These are not all the parameters, should add more.
+fitparams3 = global_datafit(_prob3, ps .=> ([0, 5.0],), t_train, data_train, maxiters = 200_000)
 ```
+
+```@example evalscenario3
+u0s = [S => (1-vac_rate)*(N_total-df_train.I[1]-df_train.R[1]-df_train.H[1]-df_train.D[1]),
+       I => (1-vac_rate) * df_train.I[1],
+       R => (1-vac_rate) * df_train.R[1],
+       H => df_train.H_unvac[1],
+       D => df_train.D_unvac[1],
+       Sv => vac_rate*(N_total-df_train.I[1]-df_train.R[1]-df_train.H[1]-df_train.D[1]),
+       Iv => vac_rate * df_train.I[1],
+       Rv => vac_rate * df_train.R[1],
+       Hv => df_train.H_vac[1],
+       Dv => df_train.D_vac[1]
+       ]
+_prob3 = remake(_prob3, p = fitparams3, u0=u0s, tspan = (t_train[1], t_train[end]))
+sol = solve(_prob3, saveat = t_train);
+plot(map(data_train) do (var, num)
+    plot(sol, idxs = [var])
+    plot!(t_train, num)
+end...)
+```
+
+```@example evalscenario3
+u0s = [S => (1-vac_rate)*(N_total-df_test.I[1]-df_test.R[1]-df_test.H[1]-df_test.D[1]),
+       I => (1-vac_rate) * df_test.I[1],
+       R => (1-vac_rate) * df_test.R[1],
+       H => df_test.H_unvac[1],
+       D => df_test.D_unvac[1],
+       Sv => vac_rate*(N_total-df_test.I[1]-df_test.R[1]-df_test.H[1]-df_test.D[1]),
+       Iv => vac_rate * df_test.I[1],
+       Rv => vac_rate * df_test.R[1],
+       Hv => df_test.H_vac[1],
+       Dv => df_test.D_vac[1]
+       ]
+_prob3 = remake(_prob3, p = fitparams3, u0=u0s, tspan = (t_test[1], t_test[end]))
+sol = solve(_prob3, saveat = t_test);
+plot(map(data_test) do (var, num)
+    plot(sol, idxs = [var])
+    plot!(t_test, num)
+end...)
+```
+
 ## Question 4: Age-Stratified Model
 
 Question 4 is the same analysis as questions 1, 2, and 3 on a model with age-stratification added. In order to build unit tests for
@@ -432,9 +407,106 @@ TA2.
 
 ## Question 5: Add Reinfection
 
-Question 5 is the same analysis as questions 1, 2, 3, and 4 on a model with reinfection added. In order to build unit tests for
-the analysis and functionality, we started by building the model with vaccine by hand, awaiting a swap to the version from
-TA2.
+Question 5 is the same analysis as questions 1, 2, 3, and 4 on a model with
+reinfection added. We will use SIRHD with reinfection.
+
+```@example evalscenario3
+sirhd = read_json_acset(LabelledPetriNet, "sirhd_renew.json")
+sirhd_sys = ODESystem(sirhd)
+sirhd_sys = complete(sirhd_sys)
+@unpack S, I, R, H, D, inf, rec, ideath, death, hosp, hrec, renew = sirhd_sys
+@parameters N = 1
+param_sub = [
+    inf => inf / N
+]
+sirhd_sys = substitute(sirhd_sys, param_sub)
+defs = ModelingToolkit.defaults(sirhd_sys)
+defs[S] = 100 - 10
+defs[I] = 10
+defs[H] = 0
+defs[D] = 0
+defs[R] = 0.0
+defs[N] = 100
+defs[inf] = 0.5
+defs[rec] = 0.25
+defs[ideath] = 0.25
+defs[death] = 0.25
+defs[hosp] = 0.25
+defs[hrec] = 0.25
+defs[renew] = 0.25
+tspan = (0.0, 40.0)
+sirhd_prob = ODEProblem(sirhd_sys, [], tspan)
+sirhd_sol = solve(sirhd_prob)
+plot(sirhd_sol)
+```
+
+#### Data Ask
+
+```@example evalscenario3
+start_train = 171
+stop_train = 171+213
+start_test = 171+214
+stop_test = 171+214+151
+
+df_train = df_raw[start_train:stop_train, :]
+df_test = df_raw[start_test:stop_test, :]
+
+t_train = collect(0:(size(df_train, 1)-1))
+t_test = collect(0:(size(df_test, 1)-1))
+
+data_train = [
+S => N_total .- df_train.I .-  df_train.R .- df_train.D .- df_train.H,
+I => df_train.I, R => df_train.R, H => df_train.H, D => df_train.D
+]
+data_test = [
+S => N_total .- df_test.I .-  df_test.R .- df_test.D .- df_test.H,
+I => df_test.I, R => df_test.R, H => df_test.H, D => df_test.D
+]
+
+u0s = [
+S => N_total - df_train.I[1] - df_train.R[1] - df_train.H[1] - df_train.D[1],
+I => df_train.I[1], R => df_train.R[1], H => df_train.H[1], D => df_train.D[1]
+]
+_prob5 = remake(sirhd_prob, u0 = u0s, tspan = (t_train[1], t_train[end]), p = [N => N_total])
+
+param_bounds = [
+    inf => [0.0, 1.0]
+    rec => [0.0, 1.0]
+    death => [0.0, 5.0]
+    ideath => [0.0, 5.0]
+    hosp => [0.0, 5.0]
+    hrec => [0.0, 5.0]
+    renew => [0.0, 1.0]
+]
+fitparams5 = global_datafit(_prob5, param_bounds, t_train, data_train, maxiters = 500_000)
+```
+```@example evalscenario3
+# Plot training fit
+_prob5_train = remake(_prob5, p = fitparams5)
+sol = solve(_prob5_train, saveat = t_train);
+plot(map(data_train) do (var, num)
+    plot(sol, idxs = var)
+    plot!(t_train, num)
+end..., dpi = 300)
+```
+```@example evalscenario3
+savefig("train_fit_S3_Q5.png")
+```
+```@example evalscenario3
+u0s = [
+S => N_total - df_test.I[1] - df_test.R[1] - df_test.H[1] - df_test.D[1],
+I => df_test.I[1], R => df_test.R[1], H => df_test.H[1], D => df_test.D[1]
+]
+_prob5_test = remake(_prob5, p = fitparams5, u0=u0s, tspan = (t_test[1], t_test[end]))
+sol = solve(_prob5_test, saveat = t_test);
+plot(map(data_test) do (var, num)
+    plot(sol, idxs = var)
+    plot!(t_test, num)
+end..., dpi = 300)
+```
+```@example evalscenario3
+savefig("test_fit_S3_Q5.png")
+```
 
 #### Data Asks
 
