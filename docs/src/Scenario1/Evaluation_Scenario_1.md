@@ -134,7 +134,7 @@ param_priors = create_priors(prob, fill(1 / 3, (3, 3)), 0.001)
 plot_uncertainty_forecast(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50, seriescolor = [:red :green :blue])
 ```
 
-Instead of the entire samples, we can also plot the quantiles of the forecast and compare the effect of different values of variance on parameters. This is also repeated for all different contact matrix variations below.
+Instead of the entire samples, we can also plot the quantiles of the forecast and compare the effect of different values of variance of the prior distributions. This is also repeated for all different contact matrix variations below.
 
 ```@example scenario1
 _p = []
