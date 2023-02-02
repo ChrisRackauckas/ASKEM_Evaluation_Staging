@@ -603,3 +603,38 @@ For each model, summarize your conclusions about the following:
  2. Describe how well the fitted model compares against historical data, both for the ‘training’ and ‘test’ periods.
 
 ### Answer
+
+#### Question 2
+
+The fits against the historical data, both training and test periods, are unremarkable but for clear reasons as described
+in the text. The SIR/SIRHD/etc. models all have clear limitations which can easily be proven from their analytical form
+this includes:
+
+1. Only a single infection peak or monotonic results in I.
+2. Rate decreases required after the infection peak for S, R, and D.
+3. H also can only have simple peaking results, or monotonic results.
+
+These 3 points are directly incompatible with the real-world data. This is because the real-world data has the properties
+that:
+
+1. The rate of decrease in S, R, and D do not decrease after the peak of the infection.
+2. The H data is non-monotonic.
+
+Since these facts are directly incompatible with the SIR and SIRHD models, there is no set of parameters that is able to
+fit all of the qualitative features of the model. Instead, the model fit tends to fit S and R, or S, R, and D with disreguard
+to the other features as a way to minimize the L2 loss, which leads to a non-qualitative fit of the infection peak and the
+hospitalization non-monotonicity.
+
+These facts are compounded in the forecasting, which attempts to forecast a new wave of the infection. The quadratic models
+are unable to model equations with dual infection peaks, and thus this is impossible to predict from any of the models except
+the final which includes reinfection.
+
+#### Question 1
+
+The fits from the data seem reasonable according to literature on the analytical results of the SIR and SIRHD type models.
+https://bmcinfectdis.biomedcentral.com/articles/10.1186/s12879-022-07403-5 describes how interventions are required in the
+model in order to be able to model second wave events, which makes it clear that a second wave cannot be modeled in these
+models and thus the forecast predictions being incorrect is a known defficiency of the model. 
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7997702/ provides a full derivation for the infection peak and shows that the
+calculation has a unique zero derivative point, which directly proves the assertion that there cannot be a second wave
+in the SIR and SIRHD models. 
