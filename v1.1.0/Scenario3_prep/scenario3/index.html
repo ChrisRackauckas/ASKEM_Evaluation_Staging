@@ -1,0 +1,2383 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Scenario 3 - Model Formation · DARPA-ASKEM Evaluation</title><script async src="https://www.googletagmanager.com/gtag/js?id=UA-90474609-3"></script><script>  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-90474609-3', {'page_path': location.pathname + location.search + location.hash});
+</script><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/favicon.ico" rel="icon" type="image/x-icon"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img src="../../assets/logo.png" alt="DARPA-ASKEM Evaluation logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">DARPA-ASKEM Evaluation</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">DARPA-ASKEM Evaluation</a></li><li><a class="tocitem" href="../../Scenario1/Evaluation_Scenario_1/">Evaluation Scenario 1</a></li><li><a class="tocitem" href="../../Scenario2/Evaluation_Scenario_2/">Evaluation Scenario 2</a></li><li class="is-active"><a class="tocitem" href>Scenario 3 - Model Formation</a><ul class="internal"><li><a class="tocitem" href="#.1-Base-SIR-model"><span>3.1 Base SIR model</span></a></li><li><a class="tocitem" href="#.2-Hospitalization-and-death"><span>3.2 Hospitalization and death</span></a></li><li><a class="tocitem" href="#.3-Vaccination"><span>3.3 Vaccination</span></a></li><li><a class="tocitem" href="#.4-Age-stratification"><span>3.4 Age stratification</span></a></li><li><a class="tocitem" href="#Bonus:-Testing-of-infectives"><span>Bonus: Testing of infectives</span></a></li></ul></li><li><a class="tocitem" href="../../Scenario3/Evaluation_Scenario_3/">Evaluation Scenario 3</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Scenario 3 - Model Formation</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Scenario 3 - Model Formation</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/ChrisRackauckas/ASKEM_Evaluation_Staging/blob/main/docs/src/Scenario3_prep/scenario3.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Scenario-3-Model-Formation"><a class="docs-heading-anchor" href="#Scenario-3-Model-Formation">Scenario 3 - Model Formation</a><a id="Scenario-3-Model-Formation-1"></a><a class="docs-heading-anchor-permalink" href="#Scenario-3-Model-Formation" title="Permalink"></a></h1><h2 id=".1-Base-SIR-model"><a class="docs-heading-anchor" href="#.1-Base-SIR-model">3.1 Base SIR model</a><a id=".1-Base-SIR-model-1"></a><a class="docs-heading-anchor-permalink" href="#.1-Base-SIR-model" title="Permalink"></a></h2><pre><code class="language-julia hljs">using AlgebraicPetri, AlgebraicPetri.TypedPetri
+using Catlab.CategoricalAlgebra, Catlab.WiringDiagrams
+
+const infectious_ontology = LabelledPetriNet([:Pop],
+                                             :infect =&gt; ((:Pop, :Pop) =&gt; (:Pop, :Pop)),
+                                             :disease =&gt; (:Pop =&gt; :Pop),
+                                             :strata =&gt; (:Pop =&gt; :Pop))
+
+Graph(infectious_ontology)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.50.0 (20211204.2007)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="180pt" height="240pt"
+ viewBox="0.00 0.00 179.90 240.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 236)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-236 175.9,-236 175.9,4 -4,4"/>
+<!-- s1 -->
+<g id="node1" class="node">
+<title>s1</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="27.95" cy="-112.5" rx="27.9" ry="27.9"/>
+<text text-anchor="middle" x="27.95" y="-108.8" font-family="Times,serif" font-size="14.00">Pop</text>
+</g>
+<!-- t1 -->
+<g id="node2" class="node">
+<title>t1</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="165.4,-232 108.4,-232 108.4,-175 165.4,-175 165.4,-232"/>
+<text text-anchor="middle" x="136.9" y="-199.8" font-family="Times,serif" font-size="14.00">infect</text>
+</g>
+<!-- s1&%2345;&gt;t1 -->
+<g id="edge2" class="edge">
+<title>s1&%2345;&gt;t1</title>
+<path fill="none" stroke="black" d="M39.03,-138.2C46.46,-153.98 58.03,-173.42 73.9,-185.5 81.09,-190.98 89.9,-194.79 98.6,-197.44"/>
+<polygon fill="black" stroke="black" points="97.72,-200.83 108.28,-199.97 99.49,-194.06 97.72,-200.83"/>
+<text text-anchor="middle" x="78.9" y="-194.3" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- t2 -->
+<g id="node3" class="node">
+<title>t2</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="171.9,-153.5 101.9,-153.5 101.9,-83.5 171.9,-83.5 171.9,-153.5"/>
+<text text-anchor="middle" x="136.9" y="-114.8" font-family="Times,serif" font-size="14.00">disease</text>
+</g>
+<!-- s1&%2345;&gt;t2 -->
+<g id="edge5" class="edge">
+<title>s1&%2345;&gt;t2</title>
+<path fill="none" stroke="black" d="M55.93,-114.01C66.66,-114.62 79.28,-115.32 91.28,-116"/>
+<polygon fill="black" stroke="black" points="91.43,-119.51 101.61,-116.58 91.83,-112.52 91.43,-119.51"/>
+<text text-anchor="middle" x="78.9" y="-119.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t3 -->
+<g id="node4" class="node">
+<title>t3</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="166.4,-59 107.4,-59 107.4,0 166.4,0 166.4,-59"/>
+<text text-anchor="middle" x="136.9" y="-25.8" font-family="Times,serif" font-size="14.00">strata</text>
+</g>
+<!-- s1&%2345;&gt;t3 -->
+<g id="edge1" class="edge">
+<title>s1&%2345;&gt;t3</title>
+<path fill="none" stroke="black" d="M49.72,-94.39C57.24,-87.98 65.85,-80.8 73.9,-74.5 81.9,-68.22 90.66,-61.68 99.01,-55.59"/>
+<polygon fill="black" stroke="black" points="101.12,-58.38 107.17,-49.68 97.02,-52.71 101.12,-58.38"/>
+<text text-anchor="middle" x="78.9" y="-78.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t1&%2345;&gt;s1 -->
+<g id="edge6" class="edge">
+<title>t1&%2345;&gt;s1</title>
+<path fill="none" stroke="black" d="M108.19,-179.92C92.66,-166.71 73.33,-150.27 57.65,-136.92"/>
+<polygon fill="black" stroke="black" points="59.71,-134.08 49.82,-130.26 55.17,-139.41 59.71,-134.08"/>
+<text text-anchor="middle" x="78.9" y="-161.3" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- t2&%2345;&gt;s1 -->
+<g id="edge4" class="edge">
+<title>t2&%2345;&gt;s1</title>
+<path fill="none" stroke="black" d="M101.66,-100.2C95.87,-97.84 89.82,-95.8 83.9,-94.5 76.85,-92.95 69.42,-93.69 62.39,-95.56"/>
+<polygon fill="black" stroke="black" points="60.78,-92.41 52.46,-98.96 63.05,-99.03 60.78,-92.41"/>
+<text text-anchor="middle" x="78.9" y="-98.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t3&%2345;&gt;s1 -->
+<g id="edge3" class="edge">
+<title>t3&%2345;&gt;s1</title>
+<path fill="none" stroke="black" d="M107.24,-34.12C96.07,-36.94 83.64,-41.42 73.9,-48.5 62.97,-56.43 53.75,-67.85 46.56,-78.86"/>
+<polygon fill="black" stroke="black" points="43.49,-77.17 41.24,-87.53 49.46,-80.84 43.49,-77.17"/>
+<text text-anchor="middle" x="78.9" y="-52.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">using Catlab.Programs, Catlab.Graphics
+
+sir_uwd = @relation (S, I, R) where {(S::Pop, I::Pop, R::Pop)} begin
+    infect(S, I, I, I) # inf
+    disease(I, R) # rec
+end
+
+to_graphviz(sir_uwd, box_labels = :name, junction_labels = :variable)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.50.0 (20211204.2007)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="187pt" height="135pt"
+ viewBox="0.00 0.00 186.89 134.75" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 130.75)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-130.75 182.89,-130.75 182.89,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="45.04" cy="-58.91" rx="28.69" ry="18"/>
+<text text-anchor="middle" x="45.04" y="-55.21" font-family="Serif" font-size="14.00">infect</text>
+</g>
+<!-- n6 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="21.68" cy="-30.15" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="14.18" y="-16.45" font-family="Serif" font-size="14.00">S</text>
+</g>
+<!-- n1&%2345;&%2345;n6 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M31.99,-42.85C28.65,-38.73 25.46,-34.8 23.53,-32.43"/>
+</g>
+<!-- n7 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n7</title>
+<ellipse fill="black" stroke="black" cx="67.04" cy="-91.33" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="61.54" y="-97.63" font-family="Serif" font-size="14.00">I</text>
+</g>
+<!-- n1&%2345;&%2345;n7 -->
+<g id="edge3" class="edge">
+<title>n1&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M41.85,-77.11C45.84,-86.85 55.84,-95.67 64.43,-92.66"/>
+</g>
+<!-- n1&%2345;&%2345;n7 -->
+<g id="edge4" class="edge">
+<title>n1&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M68.43,-69.48C72.44,-76.42 73.65,-84.63 69.02,-89.64"/>
+</g>
+<!-- n1&%2345;&%2345;n7 -->
+<g id="edge5" class="edge">
+<title>n1&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M56.3,-75.5C59.85,-80.73 63.37,-85.92 65.37,-88.86"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="106.19" cy="-93.23" rx="36.49" ry="18"/>
+<text text-anchor="middle" x="106.19" y="-89.53" font-family="Serif" font-size="14.00">disease</text>
+</g>
+<!-- n2&%2345;&%2345;n7 -->
+<g id="edge6" class="edge">
+<title>n2&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M69.86,-91.47C69.75,-91.46 69.64,-91.46 69.54,-91.45"/>
+</g>
+<!-- n8 -->
+<!-- junction -->
+<g id="junction3" class="node">
+<title>n8</title>
+<ellipse fill="black" stroke="black" cx="143.04" cy="-97.39" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="151.04" y="-103.69" font-family="Serif" font-size="14.00">R</text>
+</g>
+<!-- n2&%2345;&%2345;n8 -->
+<g id="edge8" class="edge">
+<title>n2&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M142.13,-97.29C142.42,-97.32 142.65,-97.35 142.8,-97.36"/>
+</g>
+<!-- n3 -->
+<!-- n3&%2345;&%2345;n6 -->
+<g id="edge2" class="edge">
+<title>n3&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M1.02,-1.23C3.67,-4.94 15.66,-21.71 20.06,-27.87"/>
+</g>
+<!-- n4 -->
+<!-- n4&%2345;&%2345;n7 -->
+<g id="edge7" class="edge">
+<title>n4&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M47.82,-125.39C50.33,-120.94 61.87,-100.5 65.76,-93.61"/>
+</g>
+<!-- n5 -->
+<!-- n5&%2345;&%2345;n8 -->
+<g id="edge9" class="edge">
+<title>n5&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M177.52,-106.05C173.1,-104.94 153.1,-99.92 145.75,-98.07"/>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">base_names = [:inf, :rec]
+typed_sir = oapply_typed(infectious_ontology, sir_uwd, base_names)
+
+Graph(dom(typed_sir))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.50.0 (20211204.2007)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="375pt" height="48pt"
+ viewBox="0.00 0.00 375.00 47.88" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 43.88)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-43.88 371,-43.88 371,4 -4,4"/>
+<!-- s1 -->
+<g id="node1" class="node">
+<title>s1</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="18" cy="-20.38" rx="18" ry="18"/>
+<text text-anchor="middle" x="18" y="-16.68" font-family="Times,serif" font-size="14.00">S</text>
+</g>
+<!-- t1 -->
+<g id="node4" class="node">
+<title>t1</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="118,-38.38 82,-38.38 82,-2.38 118,-2.38 118,-38.38"/>
+<text text-anchor="middle" x="100" y="-16.68" font-family="Times,serif" font-size="14.00">inf</text>
+</g>
+<!-- s1&%2345;&gt;t1 -->
+<g id="edge1" class="edge">
+<title>s1&%2345;&gt;t1</title>
+<path fill="none" stroke="black" d="M36.36,-20.38C46.7,-20.38 60.06,-20.38 71.78,-20.38"/>
+<polygon fill="black" stroke="black" points="71.95,-23.88 81.95,-20.38 71.95,-16.88 71.95,-23.88"/>
+<text text-anchor="middle" x="59" y="-24.18" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s2 -->
+<g id="node2" class="node">
+<title>s2</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="182" cy="-20.38" rx="18" ry="18"/>
+<text text-anchor="middle" x="182" y="-16.68" font-family="Times,serif" font-size="14.00">I</text>
+</g>
+<!-- s2&%2345;&gt;t1 -->
+<g id="edge4" class="edge">
+<title>s2&%2345;&gt;t1</title>
+<path fill="none" stroke="black" d="M167.19,-9.38C158.47,-3.76 146.85,1.38 136,-1.38 133.01,-2.14 130.01,-3.21 127.08,-4.46"/>
+<polygon fill="black" stroke="black" points="125.51,-1.33 118.1,-8.9 128.61,-7.6 125.51,-1.33"/>
+<text text-anchor="middle" x="141" y="-5.18" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t2 -->
+<g id="node5" class="node">
+<title>t2</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="285,-39.88 246,-39.88 246,-0.88 285,-0.88 285,-39.88"/>
+<text text-anchor="middle" x="265.5" y="-16.68" font-family="Times,serif" font-size="14.00">rec</text>
+</g>
+<!-- s2&%2345;&gt;t2 -->
+<g id="edge5" class="edge">
+<title>s2&%2345;&gt;t2</title>
+<path fill="none" stroke="black" d="M200.28,-20.38C210.52,-20.38 223.74,-20.38 235.53,-20.38"/>
+<polygon fill="black" stroke="black" points="235.82,-23.88 245.82,-20.38 235.82,-16.88 235.82,-23.88"/>
+<text text-anchor="middle" x="223" y="-24.18" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s3 -->
+<g id="node3" class="node">
+<title>s3</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="349" cy="-20.38" rx="18" ry="18"/>
+<text text-anchor="middle" x="349" y="-16.68" font-family="Times,serif" font-size="14.00">R</text>
+</g>
+<!-- t1&%2345;&gt;s2 -->
+<g id="edge2" class="edge">
+<title>t1&%2345;&gt;s2</title>
+<path fill="none" stroke="black" d="M118.36,-20.38C128.7,-20.38 142.06,-20.38 153.78,-20.38"/>
+<polygon fill="black" stroke="black" points="153.95,-23.88 163.95,-20.38 153.95,-16.88 153.95,-23.88"/>
+<text text-anchor="middle" x="141" y="-24.18" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- t2&%2345;&gt;s3 -->
+<g id="edge3" class="edge">
+<title>t2&%2345;&gt;s3</title>
+<path fill="none" stroke="black" d="M285.4,-20.38C295.92,-20.38 309.18,-20.38 320.79,-20.38"/>
+<polygon fill="black" stroke="black" points="320.87,-23.88 330.87,-20.38 320.87,-16.88 320.87,-23.88"/>
+<text text-anchor="middle" x="308" y="-24.18" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+</g>
+</svg>
+'/><h2 id=".2-Hospitalization-and-death"><a class="docs-heading-anchor" href="#.2-Hospitalization-and-death">3.2 Hospitalization and death</a><a id=".2-Hospitalization-and-death-1"></a><a class="docs-heading-anchor-permalink" href="#.2-Hospitalization-and-death" title="Permalink"></a></h2><h3 id="SIRD"><a class="docs-heading-anchor" href="#SIRD">SIRD</a><a id="SIRD-1"></a><a class="docs-heading-anchor-permalink" href="#SIRD" title="Permalink"></a></h3><p>SIR model with death</p><pre><code class="language-julia hljs">with_death_uwd = @relation (S, I, R, D) where {(S::Pop, I::Pop, R::Pop, D::Pop)} begin
+    base(S, I, R)
+    disease(I, D) # die
+end
+
+sird_uwd = ocompose(with_death_uwd, 1, sir_uwd)
+
+to_graphviz(sird_uwd, box_labels = :name, junction_labels = :variable)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.50.0 (20211204.2007)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="192pt" height="202pt"
+ viewBox="0.00 0.00 192.47 201.76" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 197.76)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-197.76 188.47,-197.76 188.47,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="39.82" cy="-128.74" rx="28.69" ry="18"/>
+<text text-anchor="middle" x="39.82" y="-125.04" font-family="Serif" font-size="14.00">infect</text>
+</g>
+<!-- n8 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n8</title>
+<ellipse fill="black" stroke="black" cx="18.3" cy="-160.72" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="10.8" y="-167.02" font-family="Serif" font-size="14.00">S</text>
+</g>
+<!-- n1&%2345;&%2345;n8 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M28.55,-145.48C25.14,-150.56 21.79,-155.53 19.89,-158.36"/>
+</g>
+<!-- n9 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n9</title>
+<ellipse fill="black" stroke="black" cx="68.92" cy="-98.87" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="63.42" y="-85.17" font-family="Serif" font-size="14.00">I</text>
+</g>
+<!-- n1&%2345;&%2345;n9 -->
+<g id="edge3" class="edge">
+<title>n1&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M66,-121.05C71.33,-114.6 74.12,-106.56 70.54,-100.86"/>
+</g>
+<!-- n1&%2345;&%2345;n9 -->
+<g id="edge4" class="edge">
+<title>n1&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M39.96,-110.46C45.97,-100.58 58.67,-92.4 66.93,-97.33"/>
+</g>
+<!-- n1&%2345;&%2345;n9 -->
+<g id="edge5" class="edge">
+<title>n1&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M55.05,-113.11C59.89,-108.14 64.63,-103.27 67.12,-100.72"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="108.63" cy="-86.1" rx="36.49" ry="18"/>
+<text text-anchor="middle" x="108.63" y="-82.4" font-family="Serif" font-size="14.00">disease</text>
+</g>
+<!-- n2&%2345;&%2345;n9 -->
+<g id="edge6" class="edge">
+<title>n2&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M77.74,-96.04C75.17,-96.86 72.97,-97.57 71.41,-98.07"/>
+</g>
+<!-- n10 -->
+<!-- junction -->
+<g id="junction3" class="node">
+<title>n10</title>
+<ellipse fill="black" stroke="black" cx="146.82" cy="-80.78" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="154.82" y="-87.08" font-family="Serif" font-size="14.00">R</text>
+</g>
+<!-- n2&%2345;&%2345;n10 -->
+<g id="edge9" class="edge">
+<title>n2&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M143.83,-81.2C143.94,-81.18 144.06,-81.17 144.17,-81.15"/>
+</g>
+<!-- n3 -->
+<g id="box3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="47.26" cy="-63.81" rx="36.49" ry="18"/>
+<text text-anchor="middle" x="47.26" y="-60.11" font-family="Serif" font-size="14.00">disease</text>
+</g>
+<!-- n3&%2345;&%2345;n9 -->
+<g id="edge7" class="edge">
+<title>n3&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M58.09,-81.34C61.82,-87.37 65.54,-93.39 67.5,-96.57"/>
+</g>
+<!-- n11 -->
+<!-- junction -->
+<g id="junction4" class="node">
+<title>n11</title>
+<ellipse fill="black" stroke="black" cx="27.33" cy="-31.05" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="18.83" y="-32.35" font-family="Serif" font-size="14.00">D</text>
+</g>
+<!-- n3&%2345;&%2345;n11 -->
+<g id="edge11" class="edge">
+<title>n3&%2345;&%2345;n11</title>
+<path fill="none" stroke="black" d="M36.59,-46.28C33.48,-41.16 30.46,-36.2 28.76,-33.4"/>
+</g>
+<!-- n4 -->
+<!-- n4&%2345;&%2345;n8 -->
+<g id="edge2" class="edge">
+<title>n4&%2345;&%2345;n8</title>
+<path fill="none" stroke="black" d="M0.94,-192.46C3.17,-188.38 13.23,-169.98 16.93,-163.22"/>
+</g>
+<!-- n5 -->
+<!-- n5&%2345;&%2345;n9 -->
+<g id="edge8" class="edge">
+<title>n5&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M89.11,-131.49C86.47,-127.23 74.36,-107.66 70.27,-101.05"/>
+</g>
+<!-- n6 -->
+<!-- n6&%2345;&%2345;n10 -->
+<g id="edge10" class="edge">
+<title>n6&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M183.33,-81.13C179.24,-81.09 156.89,-80.88 149.33,-80.81"/>
+</g>
+<!-- n7 -->
+<!-- n7&%2345;&%2345;n11 -->
+<g id="edge12" class="edge">
+<title>n7&%2345;&%2345;n11</title>
+<path fill="none" stroke="black" d="M6.8,-1.26C9.43,-5.08 21.34,-22.35 25.71,-28.7"/>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">typed_sird = oapply_typed(infectious_ontology, sird_uwd, [base_names; :die])
+
+Graph(dom(typed_sird))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.50.0 (20211204.2007)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="375pt" height="104pt"
+ viewBox="0.00 0.00 375.40 103.50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 99.5)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-99.5 371.4,-99.5 371.4,4 -4,4"/>
+<!-- s1 -->
+<g id="node1" class="node">
+<title>s1</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="18" cy="-47" rx="18" ry="18"/>
+<text text-anchor="middle" x="18" y="-43.3" font-family="Times,serif" font-size="14.00">S</text>
+</g>
+<!-- t1 -->
+<g id="node5" class="node">
+<title>t1</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="118,-65 82,-65 82,-29 118,-29 118,-65"/>
+<text text-anchor="middle" x="100" y="-43.3" font-family="Times,serif" font-size="14.00">inf</text>
+</g>
+<!-- s1&%2345;&gt;t1 -->
+<g id="edge1" class="edge">
+<title>s1&%2345;&gt;t1</title>
+<path fill="none" stroke="black" d="M36.36,-47C46.7,-47 60.06,-47 71.78,-47"/>
+<polygon fill="black" stroke="black" points="71.95,-50.5 81.95,-47 71.95,-43.5 71.95,-50.5"/>
+<text text-anchor="middle" x="59" y="-50.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s2 -->
+<g id="node2" class="node">
+<title>s2</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="182" cy="-47" rx="18" ry="18"/>
+<text text-anchor="middle" x="182" y="-43.3" font-family="Times,serif" font-size="14.00">I</text>
+</g>
+<!-- s2&%2345;&gt;t1 -->
+<g id="edge6" class="edge">
+<title>s2&%2345;&gt;t1</title>
+<path fill="none" stroke="black" d="M167.19,-36.01C158.47,-30.38 146.85,-25.24 136,-28 133.01,-28.76 130.01,-29.83 127.08,-31.08"/>
+<polygon fill="black" stroke="black" points="125.51,-27.95 118.1,-35.53 128.61,-34.22 125.51,-27.95"/>
+<text text-anchor="middle" x="141" y="-31.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t2 -->
+<g id="node6" class="node">
+<title>t2</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="285,-95.5 246,-95.5 246,-56.5 285,-56.5 285,-95.5"/>
+<text text-anchor="middle" x="265.5" y="-72.3" font-family="Times,serif" font-size="14.00">rec</text>
+</g>
+<!-- s2&%2345;&gt;t2 -->
+<g id="edge7" class="edge">
+<title>s2&%2345;&gt;t2</title>
+<path fill="none" stroke="black" d="M199.1,-52.73C209.72,-56.51 223.91,-61.56 236.36,-65.99"/>
+<polygon fill="black" stroke="black" points="235.27,-69.31 245.86,-69.37 237.62,-62.72 235.27,-69.31"/>
+<text text-anchor="middle" x="223" y="-66.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t3 -->
+<g id="node7" class="node">
+<title>t3</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="284.5,-38 246.5,-38 246.5,0 284.5,0 284.5,-38"/>
+<text text-anchor="middle" x="265.5" y="-15.3" font-family="Times,serif" font-size="14.00">die</text>
+</g>
+<!-- s2&%2345;&gt;t3 -->
+<g id="edge4" class="edge">
+<title>s2&%2345;&gt;t3</title>
+<path fill="none" stroke="black" d="M198.98,-40.9C204.93,-38.67 211.75,-36.17 218,-34 223.96,-31.93 230.37,-29.8 236.48,-27.82"/>
+<polygon fill="black" stroke="black" points="237.88,-31.05 246.33,-24.66 235.74,-24.38 237.88,-31.05"/>
+<text text-anchor="middle" x="223" y="-37.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s3 -->
+<g id="node3" class="node">
+<title>s3</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="349.2" cy="-76" rx="18" ry="18"/>
+<text text-anchor="middle" x="349.2" y="-72.3" font-family="Times,serif" font-size="14.00">R</text>
+</g>
+<!-- s4 -->
+<g id="node4" class="node">
+<title>s4</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="349.2" cy="-19" rx="18.4" ry="18.4"/>
+<text text-anchor="middle" x="349.2" y="-15.3" font-family="Times,serif" font-size="14.00">D</text>
+</g>
+<!-- t1&%2345;&gt;s2 -->
+<g id="edge2" class="edge">
+<title>t1&%2345;&gt;s2</title>
+<path fill="none" stroke="black" d="M118.36,-47C128.7,-47 142.06,-47 153.78,-47"/>
+<polygon fill="black" stroke="black" points="153.95,-50.5 163.95,-47 153.95,-43.5 153.95,-50.5"/>
+<text text-anchor="middle" x="141" y="-50.8" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- t2&%2345;&gt;s3 -->
+<g id="edge5" class="edge">
+<title>t2&%2345;&gt;s3</title>
+<path fill="none" stroke="black" d="M285.04,-76C295.64,-76 309.12,-76 320.91,-76"/>
+<polygon fill="black" stroke="black" points="321.13,-79.5 331.13,-76 321.13,-72.5 321.13,-79.5"/>
+<text text-anchor="middle" x="308" y="-79.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t3&%2345;&gt;s4 -->
+<g id="edge3" class="edge">
+<title>t3&%2345;&gt;s4</title>
+<path fill="none" stroke="black" d="M284.63,-19C295.21,-19 308.78,-19 320.66,-19"/>
+<polygon fill="black" stroke="black" points="320.96,-22.5 330.96,-19 320.96,-15.5 320.96,-22.5"/>
+<text text-anchor="middle" x="308" y="-22.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sird), &quot;scenario3_sird.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">257</code></pre><h3 id="SIRH"><a class="docs-heading-anchor" href="#SIRH">SIRH</a><a id="SIRH-1"></a><a class="docs-heading-anchor-permalink" href="#SIRH" title="Permalink"></a></h3><p>SIR model with hospitalization</p><pre><code class="language-julia hljs">with_hospital_uwd = @relation (S, I, R, H) where {(S::Pop, I::Pop, R::Pop, H::Pop)} begin
+    base(S, I, R)
+    disease(I, H) # hosp
+    disease(H, R) # hosp_rec
+end
+
+sirh_uwd = ocompose(with_hospital_uwd, 1, sir_uwd)
+
+to_graphviz(sirh_uwd, box_labels = :name, junction_labels = :variable)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.50.0 (20211204.2007)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="159pt" height="228pt"
+ viewBox="0.00 0.00 159.43 228.45" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 224.45)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-224.45 155.43,-224.45 155.43,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="86.45" cy="-145.55" rx="28.69" ry="18"/>
+<text text-anchor="middle" x="86.45" y="-141.85" font-family="Serif" font-size="14.00">infect</text>
+</g>
+<!-- n9 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n9</title>
+<ellipse fill="black" stroke="black" cx="83.71" cy="-183.4" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="76.21" y="-189.7" font-family="Serif" font-size="14.00">S</text>
+</g>
+<!-- n1&%2345;&%2345;n9 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M85.15,-163.59C84.66,-170.29 84.17,-177.14 83.9,-180.77"/>
+</g>
+<!-- n10 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n10</title>
+<ellipse fill="black" stroke="black" cx="94.59" cy="-105.75" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="89.09" y="-112.05" font-family="Serif" font-size="14.00">I</text>
+</g>
+<!-- n1&%2345;&%2345;n10 -->
+<g id="edge3" class="edge">
+<title>n1&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M103.19,-130.67C105.84,-121.14 104.43,-110.02 97.07,-106.57"/>
+</g>
+<!-- n1&%2345;&%2345;n10 -->
+<g id="edge4" class="edge">
+<title>n1&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M76.63,-128.57C76.96,-117.87 82.85,-106.06 91.74,-105.54"/>
+</g>
+<!-- n1&%2345;&%2345;n10 -->
+<g id="edge5" class="edge">
+<title>n1&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M90.14,-127.51C91.66,-120.11 93.24,-112.36 94.05,-108.41"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="55.04" cy="-89.85" rx="36.49" ry="18"/>
+<text text-anchor="middle" x="55.04" y="-86.15" font-family="Serif" font-size="14.00">disease</text>
+</g>
+<!-- n2&%2345;&%2345;n10 -->
+<g id="edge6" class="edge">
+<title>n2&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M83.37,-101.24C86.93,-102.67 90.04,-103.92 92.07,-104.74"/>
+</g>
+<!-- n11 -->
+<!-- junction -->
+<g id="junction3" class="node">
+<title>n11</title>
+<ellipse fill="black" stroke="black" cx="38.56" cy="-52.01" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="30.56" y="-58.31" font-family="Serif" font-size="14.00">R</text>
+</g>
+<!-- n2&%2345;&%2345;n11 -->
+<g id="edge9" class="edge">
+<title>n2&%2345;&%2345;n11</title>
+<path fill="none" stroke="black" d="M47.19,-71.81C44.27,-65.11 41.28,-58.26 39.7,-54.64"/>
+</g>
+<!-- n3 -->
+<g id="box3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="114.93" cy="-69.53" rx="36.49" ry="18"/>
+<text text-anchor="middle" x="114.93" y="-65.83" font-family="Serif" font-size="14.00">disease</text>
+</g>
+<!-- n3&%2345;&%2345;n10 -->
+<g id="edge7" class="edge">
+<title>n3&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M105,-87.22C101.45,-93.54 97.86,-99.93 95.97,-103.3"/>
+</g>
+<!-- n12 -->
+<!-- junction -->
+<g id="junction4" class="node">
+<title>n12</title>
+<ellipse fill="black" stroke="black" cx="104.89" cy="-29.81" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="108.89" y="-36.11" font-family="Serif" font-size="14.00">H</text>
+</g>
+<!-- n3&%2345;&%2345;n12 -->
+<g id="edge12" class="edge">
+<title>n3&%2345;&%2345;n12</title>
+<path fill="none" stroke="black" d="M110.38,-51.53C108.51,-44.14 106.56,-36.41 105.56,-32.47"/>
+</g>
+<!-- n4 -->
+<g id="box4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="64.71" cy="-19.72" rx="36.49" ry="18"/>
+<text text-anchor="middle" x="64.71" y="-16.02" font-family="Serif" font-size="14.00">disease</text>
+</g>
+<!-- n4&%2345;&%2345;n11 -->
+<g id="edge10" class="edge">
+<title>n4&%2345;&%2345;n11</title>
+<path fill="none" stroke="black" d="M51.02,-36.62C46.67,-41.99 42.41,-47.25 40.17,-50.01"/>
+</g>
+<!-- n4&%2345;&%2345;n12 -->
+<g id="edge13" class="edge">
+<title>n4&%2345;&%2345;n12</title>
+<path fill="none" stroke="black" d="M97.52,-27.96C99.43,-28.44 101.08,-28.86 102.33,-29.17"/>
+</g>
+<!-- n5 -->
+<!-- n5&%2345;&%2345;n9 -->
+<g id="edge2" class="edge">
+<title>n5&%2345;&%2345;n9</title>
+<path fill="none" stroke="black" d="M88.73,-219.05C88.08,-214.48 85.18,-193.8 84.11,-186.21"/>
+</g>
+<!-- n6 -->
+<!-- n6&%2345;&%2345;n10 -->
+<g id="edge8" class="edge">
+<title>n6&%2345;&%2345;n10</title>
+<path fill="none" stroke="black" d="M133.77,-117.05C129.39,-115.78 105.4,-108.87 97.28,-106.53"/>
+</g>
+<!-- n7 -->
+<!-- n7&%2345;&%2345;n11 -->
+<g id="edge11" class="edge">
+<title>n7&%2345;&%2345;n11</title>
+<path fill="none" stroke="black" d="M1.16,-42.66C5.35,-43.71 28.24,-49.43 35.99,-51.37"/>
+</g>
+<!-- n8 -->
+<!-- n8&%2345;&%2345;n12 -->
+<g id="edge14" class="edge">
+<title>n8&%2345;&%2345;n12</title>
+<path fill="none" stroke="black" d="M130.22,-1.22C126.91,-4.96 111.71,-22.12 106.59,-27.9"/>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">typed_sirh = oapply_typed(infectious_ontology, sirh_uwd,
+                          [base_names; [:hosp, :hosp_rec]])
+
+Graph(dom(typed_sirh))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.50.0 (20211204.2007)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="625pt" height="135pt"
+ viewBox="0.00 0.00 624.70 134.50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 130.5)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-130.5 620.7,-130.5 620.7,4 -4,4"/>
+<!-- s1 -->
+<g id="node1" class="node">
+<title>s1</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="18" cy="-81" rx="18" ry="18"/>
+<text text-anchor="middle" x="18" y="-77.3" font-family="Times,serif" font-size="14.00">S</text>
+</g>
+<!-- t1 -->
+<g id="node5" class="node">
+<title>t1</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="118,-99 82,-99 82,-63 118,-63 118,-99"/>
+<text text-anchor="middle" x="100" y="-77.3" font-family="Times,serif" font-size="14.00">inf</text>
+</g>
+<!-- s1&%2345;&gt;t1 -->
+<g id="edge3" class="edge">
+<title>s1&%2345;&gt;t1</title>
+<path fill="none" stroke="black" d="M36.36,-81C46.7,-81 60.06,-81 71.78,-81"/>
+<polygon fill="black" stroke="black" points="71.95,-84.5 81.95,-81 71.95,-77.5 71.95,-84.5"/>
+<text text-anchor="middle" x="59" y="-84.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s2 -->
+<g id="node2" class="node">
+<title>s2</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="182" cy="-81" rx="18" ry="18"/>
+<text text-anchor="middle" x="182" y="-77.3" font-family="Times,serif" font-size="14.00">I</text>
+</g>
+<!-- s2&%2345;&gt;t1 -->
+<g id="edge8" class="edge">
+<title>s2&%2345;&gt;t1</title>
+<path fill="none" stroke="black" d="M167.19,-70.01C158.47,-64.38 146.85,-59.24 136,-62 133.01,-62.76 130.01,-63.83 127.08,-65.08"/>
+<polygon fill="black" stroke="black" points="125.51,-61.95 118.1,-69.53 128.61,-68.22 125.51,-61.95"/>
+<text text-anchor="middle" x="141" y="-65.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t2 -->
+<g id="node6" class="node">
+<title>t2</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="353,-126.5 314,-126.5 314,-87.5 353,-87.5 353,-126.5"/>
+<text text-anchor="middle" x="333.5" y="-103.3" font-family="Times,serif" font-size="14.00">rec</text>
+</g>
+<!-- s2&%2345;&gt;t2 -->
+<g id="edge9" class="edge">
+<title>s2&%2345;&gt;t2</title>
+<path fill="none" stroke="black" d="M199.86,-83.93C225,-88.3 272.64,-96.59 303.46,-101.95"/>
+<polygon fill="black" stroke="black" points="303.14,-105.45 313.59,-103.71 304.34,-98.55 303.14,-105.45"/>
+<text text-anchor="middle" x="223" y="-92.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t3 -->
+<g id="node7" class="node">
+<title>t3</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="296,-79 246,-79 246,-29 296,-29 296,-79"/>
+<text text-anchor="middle" x="271" y="-50.3" font-family="Times,serif" font-size="14.00">hosp</text>
+</g>
+<!-- s2&%2345;&gt;t3 -->
+<g id="edge6" class="edge">
+<title>s2&%2345;&gt;t3</title>
+<path fill="none" stroke="black" d="M199.38,-75.83C205.25,-73.98 211.92,-71.89 218,-70 223.84,-68.19 230.04,-66.27 236.06,-64.41"/>
+<polygon fill="black" stroke="black" points="237.39,-67.66 245.91,-61.38 235.33,-60.97 237.39,-67.66"/>
+<text text-anchor="middle" x="223" y="-73.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s3 -->
+<g id="node3" class="node">
+<title>s3</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="598.7" cy="-74" rx="18" ry="18"/>
+<text text-anchor="middle" x="598.7" y="-70.3" font-family="Times,serif" font-size="14.00">R</text>
+</g>
+<!-- s4 -->
+<g id="node4" class="node">
+<title>s4</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="389.85" cy="-43" rx="18.7" ry="18.7"/>
+<text text-anchor="middle" x="389.85" y="-39.3" font-family="Times,serif" font-size="14.00">H</text>
+</g>
+<!-- t4 -->
+<g id="node8" class="node">
+<title>t4</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="534.7,-80 454.7,-80 454.7,0 534.7,0 534.7,-80"/>
+<text text-anchor="middle" x="494.7" y="-36.3" font-family="Times,serif" font-size="14.00">hosp_rec</text>
+</g>
+<!-- s4&%2345;&gt;t4 -->
+<g id="edge2" class="edge">
+<title>s4&%2345;&gt;t4</title>
+<path fill="none" stroke="black" d="M408.76,-42.48C418.75,-42.19 431.73,-41.81 444.53,-41.43"/>
+<polygon fill="black" stroke="black" points="444.79,-44.93 454.69,-41.14 444.59,-37.93 444.79,-44.93"/>
+<text text-anchor="middle" x="431.7" y="-45.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t1&%2345;&gt;s2 -->
+<g id="edge4" class="edge">
+<title>t1&%2345;&gt;s2</title>
+<path fill="none" stroke="black" d="M118.36,-81C128.7,-81 142.06,-81 153.78,-81"/>
+<polygon fill="black" stroke="black" points="153.95,-84.5 163.95,-81 153.95,-77.5 153.95,-84.5"/>
+<text text-anchor="middle" x="141" y="-84.8" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- t2&%2345;&gt;s3 -->
+<g id="edge7" class="edge">
+<title>t2&%2345;&gt;s3</title>
+<path fill="none" stroke="black" d="M353.1,-106.22C388.61,-104.54 468.4,-99.82 534.7,-89 546.81,-87.02 560.04,-84.01 571.24,-81.2"/>
+<polygon fill="black" stroke="black" points="572.44,-84.5 581.25,-78.6 570.69,-77.72 572.44,-84.5"/>
+<text text-anchor="middle" x="431.7" y="-104.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t3&%2345;&gt;s4 -->
+<g id="edge5" class="edge">
+<title>t3&%2345;&gt;s4</title>
+<path fill="none" stroke="black" d="M296.21,-51.72C314.94,-49.96 340.9,-47.51 360.58,-45.66"/>
+<polygon fill="black" stroke="black" points="361.15,-49.12 370.78,-44.7 360.49,-42.15 361.15,-49.12"/>
+<text text-anchor="middle" x="333.5" y="-53.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t4&%2345;&gt;s3 -->
+<g id="edge1" class="edge">
+<title>t4&%2345;&gt;s3</title>
+<path fill="none" stroke="black" d="M534.84,-53.05C547.23,-57.18 560.6,-61.64 571.82,-65.37"/>
+<polygon fill="black" stroke="black" points="570.83,-68.73 581.42,-68.58 573.04,-62.09 570.83,-68.73"/>
+<text text-anchor="middle" x="557.7" y="-66.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sirh), &quot;scenario3_sirh.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">311</code></pre><h3 id="SIRHD"><a class="docs-heading-anchor" href="#SIRHD">SIRHD</a><a id="SIRHD-1"></a><a class="docs-heading-anchor-permalink" href="#SIRHD" title="Permalink"></a></h3><p>SIR model with both hospitalization and death</p><pre><code class="language-julia hljs">with_hospital_death_uwd = @relation (S, I, R, H,
+                                     D) where {(S::Pop, I::Pop, R::Pop, H::Pop, D::Pop)} begin
+    base(S, I, R, H)
+    disease(I, D) # die
+    disease(H, D) # hosp_die
+end
+
+sirhd_uwd = ocompose(with_hospital_death_uwd, 1, sirh_uwd)
+
+to_graphviz(sirhd_uwd, box_labels = :name, junction_labels = :variable,
+            edge_attrs = Dict(:len =&gt; &quot;0.75&quot;))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.50.0 (20211204.2007)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="363pt" height="323pt"
+ viewBox="0.00 0.00 363.38 323.30" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 319.3)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-319.3 359.38,-319.3 359.38,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="114.47" cy="-177.11" rx="28.69" ry="18"/>
+<text text-anchor="middle" x="114.47" y="-173.41" font-family="Serif" font-size="14.00">infect</text>
+</g>
+<!-- n12 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n12</title>
+<ellipse fill="black" stroke="black" cx="56.33" cy="-183.71" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="48.83" y="-190.01" font-family="Serif" font-size="14.00">S</text>
+</g>
+<!-- n1&%2345;&%2345;n12 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n12</title>
+<path fill="none" stroke="black" d="M86.08,-180.33C75.01,-181.59 63.81,-182.86 58.9,-183.41"/>
+</g>
+<!-- n13 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n13</title>
+<ellipse fill="black" stroke="black" cx="174.28" cy="-156.82" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="168.78" y="-163.12" font-family="Serif" font-size="14.00">I</text>
+</g>
+<!-- n1&%2345;&%2345;n13 -->
+<g id="edge3" class="edge">
+<title>n1&%2345;&%2345;n13</title>
+<path fill="none" stroke="black" d="M142.72,-181.53C158.19,-177.58 174.23,-168.42 174.67,-159.55"/>
+</g>
+<!-- n1&%2345;&%2345;n13 -->
+<g id="edge4" class="edge">
+<title>n1&%2345;&%2345;n13</title>
+<path fill="none" stroke="black" d="M126.03,-160.54C141.17,-151.47 166.12,-146.28 172.95,-154.45"/>
+</g>
+<!-- n1&%2345;&%2345;n13 -->
+<g id="edge5" class="edge">
+<title>n1&%2345;&%2345;n13</title>
+<path fill="none" stroke="black" d="M139.84,-168.5C152.57,-164.18 166.43,-159.48 171.89,-157.63"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="189.88" cy="-221.23" rx="36.49" ry="18"/>
+<text text-anchor="middle" x="189.88" y="-217.53" font-family="Serif" font-size="14.00">disease</text>
+</g>
+<!-- n2&%2345;&%2345;n13 -->
+<g id="edge6" class="edge">
+<title>n2&%2345;&%2345;n13</title>
+<path fill="none" stroke="black" d="M185.53,-203.28C181.79,-187.8 176.7,-166.8 174.93,-159.47"/>
+</g>
+<!-- n14 -->
+<!-- junction -->
+<g id="junction3" class="node">
+<title>n14</title>
+<ellipse fill="black" stroke="black" cx="243.09" cy="-255.94" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="235.09" y="-262.24" font-family="Serif" font-size="14.00">R</text>
+</g>
+<!-- n2&%2345;&%2345;n14 -->
+<g id="edge10" class="edge">
+<title>n2&%2345;&%2345;n14</title>
+<path fill="none" stroke="black" d="M212.14,-235.74C223.53,-243.18 236.02,-251.32 240.93,-254.53"/>
+</g>
+<!-- n3 -->
+<g id="box3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="232.87" cy="-158.8" rx="36.49" ry="18"/>
+<text text-anchor="middle" x="232.87" y="-155.1" font-family="Serif" font-size="14.00">disease</text>
+</g>
+<!-- n3&%2345;&%2345;n13 -->
+<g id="edge7" class="edge">
+<title>n3&%2345;&%2345;n13</title>
+<path fill="none" stroke="black" d="M196.43,-157.56C188.24,-157.29 180.84,-157.04 177.02,-156.91"/>
+</g>
+<!-- n15 -->
+<!-- junction -->
+<g id="junction4" class="node">
+<title>n15</title>
+<ellipse fill="black" stroke="black" cx="294.13" cy="-158.94" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="285.13" y="-165.24" font-family="Serif" font-size="14.00">H</text>
+</g>
+<!-- n3&%2345;&%2345;n15 -->
+<g id="edge13" class="edge">
+<title>n3&%2345;&%2345;n15</title>
+<path fill="none" stroke="black" d="M269.57,-158.88C278.95,-158.91 287.53,-158.93 291.62,-158.94"/>
+</g>
+<!-- n4 -->
+<g id="box4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="296.95" cy="-222.59" rx="36.49" ry="18"/>
+<text text-anchor="middle" x="296.95" y="-218.89" font-family="Serif" font-size="14.00">disease</text>
+</g>
+<!-- n4&%2345;&%2345;n14 -->
+<g id="edge11" class="edge">
+<title>n4&%2345;&%2345;n14</title>
+<path fill="none" stroke="black" d="M274.11,-236.73C262.64,-243.83 250.16,-251.56 245.25,-254.6"/>
+</g>
+<!-- n4&%2345;&%2345;n15 -->
+<g id="edge14" class="edge">
+<title>n4&%2345;&%2345;n15</title>
+<path fill="none" stroke="black" d="M296.15,-204.52C295.47,-189.23 294.56,-168.7 294.25,-161.54"/>
+</g>
+<!-- n5 -->
+<g id="box5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="193.72" cy="-92.54" rx="36.49" ry="18"/>
+<text text-anchor="middle" x="193.72" y="-88.84" font-family="Serif" font-size="14.00">disease</text>
+</g>
+<!-- n5&%2345;&%2345;n13 -->
+<g id="edge8" class="edge">
+<title>n5&%2345;&%2345;n13</title>
+<path fill="none" stroke="black" d="M188.3,-110.45C183.63,-125.9 177.3,-146.85 175.08,-154.17"/>
+</g>
+<!-- n16 -->
+<!-- junction -->
+<g id="junction5" class="node">
+<title>n16</title>
+<ellipse fill="black" stroke="black" cx="246.99" cy="-59.44" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="238.49" y="-65.74" font-family="Serif" font-size="14.00">D</text>
+</g>
+<!-- n5&%2345;&%2345;n16 -->
+<g id="edge17" class="edge">
+<title>n5&%2345;&%2345;n16</title>
+<path fill="none" stroke="black" d="M216.62,-78.31C227.67,-71.44 239.6,-64.03 244.59,-60.93"/>
+</g>
+<!-- n6 -->
+<g id="box6" class="node">
+<title>n6</title>
+<ellipse fill="none" stroke="black" cx="299.14" cy="-95.18" rx="36.49" ry="18"/>
+<text text-anchor="middle" x="299.14" y="-91.48" font-family="Serif" font-size="14.00">disease</text>
+</g>
+<!-- n6&%2345;&%2345;n15 -->
+<g id="edge15" class="edge">
+<title>n6&%2345;&%2345;n15</title>
+<path fill="none" stroke="black" d="M297.72,-113.28C296.52,-128.6 294.9,-149.17 294.34,-156.34"/>
+</g>
+<!-- n6&%2345;&%2345;n16 -->
+<g id="edge18" class="edge">
+<title>n6&%2345;&%2345;n16</title>
+<path fill="none" stroke="black" d="M277.63,-80.43C266.4,-72.74 254.02,-64.26 249.13,-60.91"/>
+</g>
+<!-- n7 -->
+<!-- n7&%2345;&%2345;n12 -->
+<g id="edge2" class="edge">
+<title>n7&%2345;&%2345;n12</title>
+<path fill="none" stroke="black" d="M1.13,-185.62C6.4,-185.44 43.38,-184.16 53.67,-183.8"/>
+</g>
+<!-- n8 -->
+<!-- n8&%2345;&%2345;n13 -->
+<g id="edge9" class="edge">
+<title>n8&%2345;&%2345;n13</title>
+<path fill="none" stroke="black" d="M133.5,-115.41C138.24,-120.22 164.95,-147.34 172.37,-154.88"/>
+</g>
+<!-- n9 -->
+<!-- n9&%2345;&%2345;n14 -->
+<g id="edge12" class="edge">
+<title>n9&%2345;&%2345;n14</title>
+<path fill="none" stroke="black" d="M249.69,-314.14C249.06,-308.53 244.56,-268.88 243.38,-258.45"/>
+</g>
+<!-- n10 -->
+<!-- n10&%2345;&%2345;n15 -->
+<g id="edge16" class="edge">
+<title>n10&%2345;&%2345;n15</title>
+<path fill="none" stroke="black" d="M354.2,-159.89C348.41,-159.79 307.49,-159.15 296.72,-158.98"/>
+</g>
+<!-- n11 -->
+<!-- n11&%2345;&%2345;n16 -->
+<g id="edge19" class="edge">
+<title>n11&%2345;&%2345;n16</title>
+<path fill="none" stroke="black" d="M252.37,-1.16C251.85,-6.78 248.18,-46.48 247.22,-56.93"/>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">typed_sirhd = oapply_typed(infectious_ontology, sirhd_uwd,
+                           [base_names; [:hosp, :hosp_rec, :die, :hosp_die]])
+
+Graph(dom(typed_sirhd))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.50.0 (20211204.2007)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="653pt" height="247pt"
+ viewBox="0.00 0.00 653.09 247.20" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 243.2)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-243.2 649.09,-243.2 649.09,4 -4,4"/>
+<!-- s1 -->
+<g id="node1" class="node">
+<title>s1</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="18" cy="-107.2" rx="18" ry="18"/>
+<text text-anchor="middle" x="18" y="-103.5" font-family="Times,serif" font-size="14.00">S</text>
+</g>
+<!-- t1 -->
+<g id="node6" class="node">
+<title>t1</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="118,-125.2 82,-125.2 82,-89.2 118,-89.2 118,-125.2"/>
+<text text-anchor="middle" x="100" y="-103.5" font-family="Times,serif" font-size="14.00">inf</text>
+</g>
+<!-- s1&%2345;&gt;t1 -->
+<g id="edge12" class="edge">
+<title>s1&%2345;&gt;t1</title>
+<path fill="none" stroke="black" d="M36.36,-107.2C46.7,-107.2 60.06,-107.2 71.78,-107.2"/>
+<polygon fill="black" stroke="black" points="71.95,-110.7 81.95,-107.2 71.95,-103.7 71.95,-110.7"/>
+<text text-anchor="middle" x="59" y="-111" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s2 -->
+<g id="node2" class="node">
+<title>s2</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="182" cy="-107.2" rx="18" ry="18"/>
+<text text-anchor="middle" x="182" y="-103.5" font-family="Times,serif" font-size="14.00">I</text>
+</g>
+<!-- s2&%2345;&gt;t1 -->
+<g id="edge13" class="edge">
+<title>s2&%2345;&gt;t1</title>
+<path fill="none" stroke="black" d="M166.69,-97.33C160.6,-93.7 153.24,-90.04 146,-88.2 139.74,-86.61 133.23,-87.65 127.16,-89.89"/>
+<polygon fill="black" stroke="black" points="125.63,-86.74 118.1,-94.19 128.63,-93.06 125.63,-86.74"/>
+<text text-anchor="middle" x="141" y="-92" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t2 -->
+<g id="node7" class="node">
+<title>t2</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="353,-237.7 314,-237.7 314,-198.7 353,-198.7 353,-237.7"/>
+<text text-anchor="middle" x="333.5" y="-214.5" font-family="Times,serif" font-size="14.00">rec</text>
+</g>
+<!-- s2&%2345;&gt;t2 -->
+<g id="edge8" class="edge">
+<title>s2&%2345;&gt;t2</title>
+<path fill="none" stroke="black" d="M197.06,-117.64C221.78,-135.99 273.4,-174.32 305.29,-198"/>
+<polygon fill="black" stroke="black" points="303.61,-201.11 313.72,-204.26 307.78,-195.49 303.61,-201.11"/>
+<text text-anchor="middle" x="223" y="-143" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t3 -->
+<g id="node8" class="node">
+<title>t3</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="296,-132.2 246,-132.2 246,-82.2 296,-82.2 296,-132.2"/>
+<text text-anchor="middle" x="271" y="-103.5" font-family="Times,serif" font-size="14.00">hosp</text>
+</g>
+<!-- s2&%2345;&gt;t3 -->
+<g id="edge2" class="edge">
+<title>s2&%2345;&gt;t3</title>
+<path fill="none" stroke="black" d="M200.19,-107.2C210.3,-107.2 223.45,-107.2 235.61,-107.2"/>
+<polygon fill="black" stroke="black" points="235.93,-110.7 245.93,-107.2 235.93,-103.7 235.93,-110.7"/>
+<text text-anchor="middle" x="223" y="-111" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t5 -->
+<g id="node10" class="node">
+<title>t5</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="464.7,-42.2 426.7,-42.2 426.7,-4.2 464.7,-4.2 464.7,-42.2"/>
+<text text-anchor="middle" x="445.7" y="-19.5" font-family="Times,serif" font-size="14.00">die</text>
+</g>
+<!-- s2&%2345;&gt;t5 -->
+<g id="edge10" class="edge">
+<title>s2&%2345;&gt;t5</title>
+<path fill="none" stroke="black" d="M195.28,-94.62C207.17,-83.24 226.24,-66.97 246,-58.2 303.04,-32.88 376.93,-25.85 416.58,-23.92"/>
+<polygon fill="black" stroke="black" points="416.74,-27.41 426.59,-23.5 416.45,-20.42 416.74,-27.41"/>
+<text text-anchor="middle" x="271" y="-62" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s3 -->
+<g id="node3" class="node">
+<title>s3</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="626.9" cy="-221.2" rx="18" ry="18"/>
+<text text-anchor="middle" x="626.9" y="-217.5" font-family="Times,serif" font-size="14.00">R</text>
+</g>
+<!-- s4 -->
+<g id="node4" class="node">
+<title>s4</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="389.85" cy="-107.2" rx="18.7" ry="18.7"/>
+<text text-anchor="middle" x="389.85" y="-103.5" font-family="Times,serif" font-size="14.00">H</text>
+</g>
+<!-- t4 -->
+<g id="node9" class="node">
+<title>t4</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="562.7,-210.2 482.7,-210.2 482.7,-130.2 562.7,-130.2 562.7,-210.2"/>
+<text text-anchor="middle" x="522.7" y="-166.5" font-family="Times,serif" font-size="14.00">hosp_rec</text>
+</g>
+<!-- s4&%2345;&gt;t4 -->
+<g id="edge6" class="edge">
+<title>s4&%2345;&gt;t4</title>
+<path fill="none" stroke="black" d="M407.16,-115.05C423.73,-123.03 450.21,-135.78 473.53,-147.01"/>
+<polygon fill="black" stroke="black" points="472.1,-150.2 482.62,-151.39 475.13,-143.89 472.1,-150.2"/>
+<text text-anchor="middle" x="445.7" y="-146" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t6 -->
+<g id="node11" class="node">
+<title>t6</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="562.2,-111.7 483.2,-111.7 483.2,-32.7 562.2,-32.7 562.2,-111.7"/>
+<text text-anchor="middle" x="522.7" y="-68.5" font-family="Times,serif" font-size="14.00">hosp_die</text>
+</g>
+<!-- s4&%2345;&gt;t6 -->
+<g id="edge7" class="edge">
+<title>s4&%2345;&gt;t6</title>
+<path fill="none" stroke="black" d="M408.22,-102.55C424.76,-98.13 450.41,-91.27 473.15,-85.18"/>
+<polygon fill="black" stroke="black" points="474.25,-88.51 483.01,-82.55 472.44,-81.75 474.25,-88.51"/>
+<text text-anchor="middle" x="445.7" y="-101" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s5 -->
+<g id="node5" class="node">
+<title>s5</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="626.9" cy="-18.2" rx="18.4" ry="18.4"/>
+<text text-anchor="middle" x="626.9" y="-14.5" font-family="Times,serif" font-size="14.00">D</text>
+</g>
+<!-- t1&%2345;&gt;s2 -->
+<g id="edge9" class="edge">
+<title>t1&%2345;&gt;s2</title>
+<path fill="none" stroke="black" d="M118.36,-107.2C128.7,-107.2 142.06,-107.2 153.78,-107.2"/>
+<polygon fill="black" stroke="black" points="153.95,-110.7 163.95,-107.2 153.95,-103.7 153.95,-110.7"/>
+<text text-anchor="middle" x="141" y="-111" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- t2&%2345;&gt;s3 -->
+<g id="edge3" class="edge">
+<title>t2&%2345;&gt;s3</title>
+<path fill="none" stroke="black" d="M353.03,-218.6C394.05,-219.47 495.63,-221.51 580.7,-222.2 585.14,-222.23 586.25,-222.26 590.7,-222.2 593.26,-222.16 595.94,-222.11 598.61,-222.05"/>
+<polygon fill="black" stroke="black" points="598.81,-225.55 608.71,-221.78 598.62,-218.55 598.81,-225.55"/>
+<text text-anchor="middle" x="445.7" y="-224" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t3&%2345;&gt;s4 -->
+<g id="edge1" class="edge">
+<title>t3&%2345;&gt;s4</title>
+<path fill="none" stroke="black" d="M296.21,-107.2C314.94,-107.2 340.9,-107.2 360.58,-107.2"/>
+<polygon fill="black" stroke="black" points="360.78,-110.7 370.78,-107.2 360.78,-103.7 360.78,-110.7"/>
+<text text-anchor="middle" x="333.5" y="-111" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t4&%2345;&gt;s3 -->
+<g id="edge5" class="edge">
+<title>t4&%2345;&gt;s3</title>
+<path fill="none" stroke="black" d="M562.92,-189.77C575.85,-196.22 589.85,-203.21 601.36,-208.96"/>
+<polygon fill="black" stroke="black" points="599.86,-212.12 610.37,-213.45 602.98,-205.85 599.86,-212.12"/>
+<text text-anchor="middle" x="585.7" y="-207" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t5&%2345;&gt;s5 -->
+<g id="edge11" class="edge">
+<title>t5&%2345;&gt;s5</title>
+<path fill="none" stroke="black" d="M464.94,-13.96C470.5,-11.6 476.72,-9.39 482.7,-8.2 522.57,-0.22 569.78,-6.48 598.78,-12.06"/>
+<polygon fill="black" stroke="black" points="598.46,-15.57 608.96,-14.14 599.86,-8.71 598.46,-15.57"/>
+<text text-anchor="middle" x="522.7" y="-12" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t6&%2345;&gt;s5 -->
+<g id="edge4" class="edge">
+<title>t6&%2345;&gt;s5</title>
+<path fill="none" stroke="black" d="M562.33,-51.78C575.4,-44.88 589.63,-37.36 601.31,-31.19"/>
+<polygon fill="black" stroke="black" points="603.23,-34.13 610.44,-26.37 599.96,-27.94 603.23,-34.13"/>
+<text text-anchor="middle" x="585.7" y="-46" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sirhd), &quot;scenario3_sirhd.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">426</code></pre><h2 id=".3-Vaccination"><a class="docs-heading-anchor" href="#.3-Vaccination">3.3 Vaccination</a><a id=".3-Vaccination-1"></a><a class="docs-heading-anchor-permalink" href="#.3-Vaccination" title="Permalink"></a></h2><p>SIRHD model with vaccination.</p><pre><code class="language-julia hljs">vaccination_uwd = @relation () where {(U::Pop, V::Pop)} begin
+    strata(U, V) # vac
+    infect(U, U, U, U)
+    infect(U, V, U, V)
+    infect(V, U, V, U)
+    infect(V, V, V, V)
+end
+
+typed_vaccination = oapply_typed(infectious_ontology, vaccination_uwd,
+                                 [:vac, :UU, :UV, :VU, :VV])
+
+to_graphviz(vaccination_uwd, box_labels = :name, junction_labels = :variable,
+            edge_attrs = Dict(:len =&gt; &quot;1&quot;), graph_attrs = Dict(:start =&gt; &quot;2&quot;))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.50.0 (20211204.2007)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="261pt" height="180pt"
+ viewBox="0.00 0.00 261.10 179.62" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 175.62)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-175.62 257.1,-175.62 257.1,4 -4,4"/>
+<!-- n1 -->
+<g id="box1" class="node">
+<title>n1</title>
+<ellipse fill="none" stroke="black" cx="149.57" cy="-18" rx="30.04" ry="18"/>
+<text text-anchor="middle" x="149.57" y="-14.3" font-family="Serif" font-size="14.00">strata</text>
+</g>
+<!-- n6 -->
+<!-- junction -->
+<g id="junction1" class="node">
+<title>n6</title>
+<ellipse fill="black" stroke="black" cx="103.78" cy="-82.76" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="94.78" y="-89.06" font-family="Serif" font-size="14.00">U</text>
+</g>
+<!-- n1&%2345;&%2345;n6 -->
+<g id="edge1" class="edge">
+<title>n1&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M137.77,-34.68C126.54,-50.57 110.6,-73.11 105.45,-80.39"/>
+</g>
+<!-- n7 -->
+<!-- junction -->
+<g id="junction2" class="node">
+<title>n7</title>
+<ellipse fill="black" stroke="black" cx="167.09" cy="-95.32" rx="2.5" ry="2.5"/>
+<text text-anchor="middle" x="159.59" y="-101.62" font-family="Serif" font-size="14.00">V</text>
+</g>
+<!-- n1&%2345;&%2345;n7 -->
+<g id="edge10" class="edge">
+<title>n1&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M153.63,-35.93C158,-55.21 164.58,-84.23 166.53,-92.84"/>
+</g>
+<!-- n2 -->
+<g id="box2" class="node">
+<title>n2</title>
+<ellipse fill="none" stroke="black" cx="28.84" cy="-115.11" rx="28.69" ry="18"/>
+<text text-anchor="middle" x="28.84" y="-111.41" font-family="Serif" font-size="14.00">infect</text>
+</g>
+<!-- n2&%2345;&%2345;n6 -->
+<g id="edge2" class="edge">
+<title>n2&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M54.83,-123.34C78.15,-119.69 107.55,-101.56 104.62,-85.52"/>
+</g>
+<!-- n2&%2345;&%2345;n6 -->
+<g id="edge3" class="edge">
+<title>n2&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M33.5,-97.27C48.98,-79.18 91.35,-65.15 102.38,-80.3"/>
+</g>
+<!-- n2&%2345;&%2345;n6 -->
+<g id="edge4" class="edge">
+<title>n2&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M46.52,-100.88C65.29,-90.96 93.25,-80.35 101.52,-81.5"/>
+</g>
+<!-- n2&%2345;&%2345;n6 -->
+<g id="edge5" class="edge">
+<title>n2&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M56.76,-110.06C75.85,-102.94 98.46,-91.61 103.06,-85.37"/>
+</g>
+<!-- n3 -->
+<g id="box3" class="node">
+<title>n3</title>
+<ellipse fill="none" stroke="black" cx="90.58" cy="-31.86" rx="28.69" ry="18"/>
+<text text-anchor="middle" x="90.58" y="-28.16" font-family="Serif" font-size="14.00">infect</text>
+</g>
+<!-- n3&%2345;&%2345;n6 -->
+<g id="edge6" class="edge">
+<title>n3&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M88.68,-49.84C90.83,-62.68 96.25,-78.28 101.14,-82"/>
+</g>
+<!-- n3&%2345;&%2345;n6 -->
+<g id="edge7" class="edge">
+<title>n3&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M101.65,-48.6C105.66,-60.69 108.1,-75.74 105.66,-80.95"/>
+</g>
+<!-- n3&%2345;&%2345;n7 -->
+<g id="edge11" class="edge">
+<title>n3&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M102.18,-48.63C120.47,-67 154.41,-93.61 164.52,-95.72"/>
+</g>
+<!-- n3&%2345;&%2345;n7 -->
+<g id="edge12" class="edge">
+<title>n3&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M113.27,-42.99C134.29,-58 162.71,-83.22 166.88,-92.43"/>
+</g>
+<!-- n4 -->
+<g id="box4" class="node">
+<title>n4</title>
+<ellipse fill="none" stroke="black" cx="198.74" cy="-53.35" rx="28.69" ry="18"/>
+<text text-anchor="middle" x="198.74" y="-49.65" font-family="Serif" font-size="14.00">infect</text>
+</g>
+<!-- n4&%2345;&%2345;n6 -->
+<g id="edge8" class="edge">
+<title>n4&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M169.96,-55.82C144.95,-61.98 111.71,-73.71 104.95,-80.29"/>
+</g>
+<!-- n4&%2345;&%2345;n6 -->
+<g id="edge9" class="edge">
+<title>n4&%2345;&%2345;n6</title>
+<path fill="none" stroke="black" d="M177.96,-65.9C153.98,-75.4 116.56,-85.68 106.36,-84.16"/>
+</g>
+<!-- n4&%2345;&%2345;n7 -->
+<g id="edge13" class="edge">
+<title>n4&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M179.8,-67.37C172.39,-76.56 165.84,-87.66 166.04,-92.89"/>
+</g>
+<!-- n4&%2345;&%2345;n7 -->
+<g id="edge14" class="edge">
+<title>n4&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M193.16,-71.43C186.22,-82.31 175.55,-94.19 169.76,-95.65"/>
+</g>
+<!-- n5 -->
+<g id="box5" class="node">
+<title>n5</title>
+<ellipse fill="none" stroke="black" cx="224.26" cy="-153.62" rx="28.69" ry="18"/>
+<text text-anchor="middle" x="224.26" y="-149.92" font-family="Serif" font-size="14.00">infect</text>
+</g>
+<!-- n5&%2345;&%2345;n7 -->
+<g id="edge15" class="edge">
+<title>n5&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M226.69,-135.34C219.19,-112.74 185.26,-83.72 169.31,-93.58"/>
+</g>
+<!-- n5&%2345;&%2345;n7 -->
+<g id="edge16" class="edge">
+<title>n5&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M195.59,-150.48C175.85,-137.83 156.66,-110.89 165.31,-97.5"/>
+</g>
+<!-- n5&%2345;&%2345;n7 -->
+<g id="edge17" class="edge">
+<title>n5&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M203.31,-141.09C187.49,-127.05 168.46,-105.65 166.72,-97.79"/>
+</g>
+<!-- n5&%2345;&%2345;n7 -->
+<g id="edge18" class="edge">
+<title>n5&%2345;&%2345;n7</title>
+<path fill="none" stroke="black" d="M215.4,-136.36C202.13,-119.85 178.5,-97.48 169.82,-95.06"/>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">typed_sirhd_aug = add_reflexives(typed_sirhd, [[:strata], [], [], [], []],
+                                 infectious_ontology)
+
+typed_vaccination_aug = add_reflexives(typed_vaccination,
+                                       [[:disease], [:disease]],
+                                       infectious_ontology)
+
+typed_sirhd_vac = typed_product(typed_sirhd_aug, typed_vaccination_aug)
+
+Graph(dom(typed_sirhd_vac))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.50.0 (20211204.2007)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="2073pt" height="781pt"
+ viewBox="0.00 0.00 2073.15 780.79" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 776.79)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-776.79 2069.15,-776.79 2069.15,4 -4,4"/>
+<!-- s1 -->
+<g id="node1" class="node">
+<title>s1</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="42.9" cy="-636.79" rx="42.79" ry="42.79"/>
+<text text-anchor="middle" x="42.9" y="-633.09" font-family="Times,serif" font-size="14.00">(:S, :U)</text>
+</g>
+<!-- t1 -->
+<g id="node11" class="node">
+<title>t1</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="243.79,-608.79 131.79,-608.79 131.79,-496.79 243.79,-496.79 243.79,-608.79"/>
+<text text-anchor="middle" x="187.79" y="-549.09" font-family="Times,serif" font-size="14.00">(:strata, :vac)</text>
+</g>
+<!-- s1&%2345;&gt;t1 -->
+<g id="edge31" class="edge">
+<title>s1&%2345;&gt;t1</title>
+<path fill="none" stroke="black" d="M80.32,-615.37C93.2,-607.8 108.09,-599.05 122.58,-590.53"/>
+<polygon fill="black" stroke="black" points="124.68,-593.36 131.52,-585.27 121.13,-587.33 124.68,-593.36"/>
+<text text-anchor="middle" x="108.79" y="-603.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t2 -->
+<g id="node12" class="node">
+<title>t2</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1330.07,-771.29 1243.07,-771.29 1243.07,-684.29 1330.07,-684.29 1330.07,-771.29"/>
+<text text-anchor="middle" x="1286.57" y="-724.09" font-family="Times,serif" font-size="14.00">(:inf, :UU)</text>
+</g>
+<!-- s1&%2345;&gt;t2 -->
+<g id="edge14" class="edge">
+<title>s1&%2345;&gt;t2</title>
+<path fill="none" stroke="black" d="M65.79,-673.09C90.36,-708.73 133.8,-757.79 186.79,-757.79 186.79,-757.79 186.79,-757.79 1007.52,-757.79 1088.01,-757.79 1108.17,-753.42 1188.07,-743.79 1202.6,-742.03 1218.27,-739.67 1232.71,-737.3"/>
+<polygon fill="black" stroke="black" points="1233.68,-740.69 1242.97,-735.59 1232.53,-733.78 1233.68,-740.69"/>
+<text text-anchor="middle" x="526.99" y="-761.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t3 -->
+<g id="node13" class="node">
+<title>t3</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="782.48,-531.29 697.48,-531.29 697.48,-446.29 782.48,-446.29 782.48,-531.29"/>
+<text text-anchor="middle" x="739.98" y="-485.09" font-family="Times,serif" font-size="14.00">(:inf, :UV)</text>
+</g>
+<!-- s1&%2345;&gt;t3 -->
+<g id="edge20" class="edge">
+<title>s1&%2345;&gt;t3</title>
+<path fill="none" stroke="black" d="M86.1,-636.79C114.55,-636.79 152.93,-636.79 186.79,-636.79 186.79,-636.79 186.79,-636.79 527.99,-636.79 597.63,-636.79 660.59,-582.07 699.24,-539.18"/>
+<polygon fill="black" stroke="black" points="701.94,-541.41 705.94,-531.59 696.69,-536.77 701.94,-541.41"/>
+<text text-anchor="middle" x="395.99" y="-640.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s2 -->
+<g id="node2" class="node">
+<title>s2</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="1006.52" cy="-590.79" rx="40.09" ry="40.09"/>
+<text text-anchor="middle" x="1006.52" y="-587.09" font-family="Times,serif" font-size="14.00">(:I, :U)</text>
+</g>
+<!-- s2&%2345;&gt;t2 -->
+<g id="edge15" class="edge">
+<title>s2&%2345;&gt;t2</title>
+<path fill="none" stroke="black" d="M1027.19,-625.87C1037.45,-641.04 1051.37,-657.61 1068.07,-667.79 1114.45,-696.03 1135.82,-675.98 1188.07,-690.79 1203.07,-695.04 1219.02,-700.61 1233.57,-706.15"/>
+<polygon fill="black" stroke="black" points="1232.32,-709.42 1242.91,-709.76 1234.85,-702.89 1232.32,-709.42"/>
+<text text-anchor="middle" x="1128.07" y="-694.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t4 -->
+<g id="node14" class="node">
+<title>t4</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="503.99,-600.29 418.99,-600.29 418.99,-515.29 503.99,-515.29 503.99,-600.29"/>
+<text text-anchor="middle" x="461.49" y="-554.09" font-family="Times,serif" font-size="14.00">(:inf, :VU)</text>
+</g>
+<!-- s2&%2345;&gt;t4 -->
+<g id="edge17" class="edge">
+<title>s2&%2345;&gt;t4</title>
+<path fill="none" stroke="black" d="M966.22,-588.02C901.54,-583.5 768.6,-574.4 655.98,-567.79 607.89,-564.96 553.06,-562.17 514.07,-560.25"/>
+<polygon fill="black" stroke="black" points="514.17,-556.75 504.01,-559.76 513.83,-563.75 514.17,-556.75"/>
+<text text-anchor="middle" x="650.98" y="-571.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t6 -->
+<g id="node16" class="node">
+<title>t6</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1506.07,-757.29 1385.07,-757.29 1385.07,-636.29 1506.07,-636.29 1506.07,-757.29"/>
+<text text-anchor="middle" x="1445.57" y="-693.09" font-family="Times,serif" font-size="14.00">(:rec, :disease)</text>
+</g>
+<!-- s2&%2345;&gt;t6 -->
+<g id="edge18" class="edge">
+<title>s2&%2345;&gt;t6</title>
+<path fill="none" stroke="black" d="M1045.94,-599.44C1111.81,-614.37 1250.5,-646.22 1367.07,-675.79 1369.7,-676.45 1372.38,-677.14 1375.09,-677.84"/>
+<polygon fill="black" stroke="black" points="1374.4,-681.28 1384.96,-680.42 1376.17,-674.51 1374.4,-681.28"/>
+<text text-anchor="middle" x="1128.07" y="-634.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t7 -->
+<g id="node17" class="node">
+<title>t7</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1352.57,-625.79 1220.57,-625.79 1220.57,-493.79 1352.57,-493.79 1352.57,-625.79"/>
+<text text-anchor="middle" x="1286.57" y="-556.09" font-family="Times,serif" font-size="14.00">(:hosp, :disease)</text>
+</g>
+<!-- s2&%2345;&gt;t7 -->
+<g id="edge35" class="edge">
+<title>s2&%2345;&gt;t7</title>
+<path fill="none" stroke="black" d="M1046.77,-586.41C1089.17,-581.68 1157.74,-574.04 1210.55,-568.15"/>
+<polygon fill="black" stroke="black" points="1211,-571.62 1220.55,-567.03 1210.23,-564.66 1211,-571.62"/>
+<text text-anchor="middle" x="1128.07" y="-586.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t9 -->
+<g id="node19" class="node">
+<title>t9</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1751.76,-466.79 1631.76,-466.79 1631.76,-346.79 1751.76,-346.79 1751.76,-466.79"/>
+<text text-anchor="middle" x="1691.76" y="-403.09" font-family="Times,serif" font-size="14.00">(:die, :disease)</text>
+</g>
+<!-- s2&%2345;&gt;t9 -->
+<g id="edge3" class="edge">
+<title>s2&%2345;&gt;t9</title>
+<path fill="none" stroke="black" d="M1038.77,-565.95C1076.19,-537.64 1141.91,-492.36 1206.07,-469.79 1347.79,-419.93 1525.32,-408.9 1621.33,-406.84"/>
+<polygon fill="black" stroke="black" points="1621.57,-410.33 1631.5,-406.65 1621.44,-403.34 1621.57,-410.33"/>
+<text text-anchor="middle" x="1286.57" y="-473.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s3 -->
+<g id="node3" class="node">
+<title>s3</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="2020.96" cy="-703.79" rx="44.39" ry="44.39"/>
+<text text-anchor="middle" x="2020.96" y="-700.09" font-family="Times,serif" font-size="14.00">(:R, :U)</text>
+</g>
+<!-- s4 -->
+<g id="node4" class="node">
+<title>s4</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="1568.92" cy="-559.79" rx="44.69" ry="44.69"/>
+<text text-anchor="middle" x="1568.92" y="-556.09" font-family="Times,serif" font-size="14.00">(:H, :U)</text>
+</g>
+<!-- t8 -->
+<g id="node18" class="node">
+<title>t8</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1930.76,-729.29 1769.76,-729.29 1769.76,-568.29 1930.76,-568.29 1930.76,-729.29"/>
+<text text-anchor="middle" x="1850.26" y="-645.09" font-family="Times,serif" font-size="14.00">(:hosp_rec, :disease)</text>
+</g>
+<!-- s4&%2345;&gt;t8 -->
+<g id="edge4" class="edge">
+<title>s4&%2345;&gt;t8</title>
+<path fill="none" stroke="black" d="M1611.74,-573.11C1650.76,-585.54 1710.27,-604.5 1759.96,-620.33"/>
+<polygon fill="black" stroke="black" points="1759.17,-623.75 1769.76,-623.45 1761.29,-617.08 1759.17,-623.75"/>
+<text text-anchor="middle" x="1691.76" y="-620.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t10 -->
+<g id="node20" class="node">
+<title>t10</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1930.76,-550.29 1769.76,-550.29 1769.76,-389.29 1930.76,-389.29 1930.76,-550.29"/>
+<text text-anchor="middle" x="1850.26" y="-466.09" font-family="Times,serif" font-size="14.00">(:hosp_die, :disease)</text>
+</g>
+<!-- s4&%2345;&gt;t10 -->
+<g id="edge36" class="edge">
+<title>s4&%2345;&gt;t10</title>
+<path fill="none" stroke="black" d="M1611.74,-546.31C1650.76,-533.74 1710.27,-514.57 1759.96,-498.56"/>
+<polygon fill="black" stroke="black" points="1761.31,-501.8 1769.76,-495.4 1759.17,-495.14 1761.31,-501.8"/>
+<text text-anchor="middle" x="1691.76" y="-542.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s5 -->
+<g id="node5" class="node">
+<title>s5</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="2020.96" cy="-392.79" rx="44.39" ry="44.39"/>
+<text text-anchor="middle" x="2020.96" y="-389.09" font-family="Times,serif" font-size="14.00">(:D, :U)</text>
+</g>
+<!-- s6 -->
+<g id="node6" class="node">
+<title>s6</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="331.39" cy="-552.79" rx="41.69" ry="41.69"/>
+<text text-anchor="middle" x="331.39" y="-549.09" font-family="Times,serif" font-size="14.00">(:S, :V)</text>
+</g>
+<!-- s6&%2345;&gt;t4 -->
+<g id="edge7" class="edge">
+<title>s6&%2345;&gt;t4</title>
+<path fill="none" stroke="black" d="M373.27,-554.38C384.48,-554.82 396.79,-555.3 408.54,-555.76"/>
+<polygon fill="black" stroke="black" points="408.54,-559.26 418.67,-556.15 408.81,-552.27 408.54,-559.26"/>
+<text text-anchor="middle" x="395.99" y="-558.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t5 -->
+<g id="node15" class="node">
+<title>t5</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="781.48,-185.29 698.48,-185.29 698.48,-102.29 781.48,-102.29 781.48,-185.29"/>
+<text text-anchor="middle" x="739.98" y="-140.09" font-family="Times,serif" font-size="14.00">(:inf, :VV)</text>
+</g>
+<!-- s6&%2345;&gt;t5 -->
+<g id="edge16" class="edge">
+<title>s6&%2345;&gt;t5</title>
+<path fill="none" stroke="black" d="M349.3,-514.89C388.19,-432.72 492.61,-238.75 645.98,-153.79 658.67,-146.76 673.82,-143.41 688.18,-142.04"/>
+<polygon fill="black" stroke="black" points="688.7,-145.52 698.44,-141.37 688.24,-138.53 688.7,-145.52"/>
+<text text-anchor="middle" x="526.99" y="-256.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s7 -->
+<g id="node7" class="node">
+<title>s7</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="588.98" cy="-367.79" rx="38.99" ry="38.99"/>
+<text text-anchor="middle" x="588.98" y="-364.09" font-family="Times,serif" font-size="14.00">(:I, :V)</text>
+</g>
+<!-- s7&%2345;&gt;t3 -->
+<g id="edge19" class="edge">
+<title>s7&%2345;&gt;t3</title>
+<path fill="none" stroke="black" d="M605,-403.62C614.37,-422.09 628.06,-443.65 645.98,-457.79 657.92,-467.21 672.86,-473.83 687.25,-478.46"/>
+<polygon fill="black" stroke="black" points="686.49,-481.88 697.08,-481.35 688.47,-475.17 686.49,-481.88"/>
+<text text-anchor="middle" x="650.98" y="-468.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s7&%2345;&gt;t5 -->
+<g id="edge6" class="edge">
+<title>s7&%2345;&gt;t5</title>
+<path fill="none" stroke="black" d="M593.86,-328.91C599.51,-290.48 613.18,-231.89 645.98,-192.79 657.35,-179.22 673.45,-168.91 689.06,-161.32"/>
+<polygon fill="black" stroke="black" points="690.52,-164.5 698.16,-157.17 687.61,-158.14 690.52,-164.5"/>
+<text text-anchor="middle" x="650.98" y="-196.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t11 -->
+<g id="node21" class="node">
+<title>t11</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="944.98,-475.29 823.98,-475.29 823.98,-354.29 944.98,-354.29 944.98,-475.29"/>
+<text text-anchor="middle" x="884.48" y="-411.09" font-family="Times,serif" font-size="14.00">(:rec, :disease)</text>
+</g>
+<!-- s7&%2345;&gt;t11 -->
+<g id="edge13" class="edge">
+<title>s7&%2345;&gt;t11</title>
+<path fill="none" stroke="black" d="M625.45,-381.63C640.24,-386.87 657.73,-392.39 673.98,-395.79 719.95,-405.4 772.6,-410.15 813.62,-412.49"/>
+<polygon fill="black" stroke="black" points="813.62,-416 823.79,-413.04 813.99,-409.01 813.62,-416"/>
+<text text-anchor="middle" x="650.98" y="-395.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t12 -->
+<g id="node22" class="node">
+<title>t12</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="805.98,-386.79 673.98,-386.79 673.98,-254.79 805.98,-254.79 805.98,-386.79"/>
+<text text-anchor="middle" x="739.98" y="-317.09" font-family="Times,serif" font-size="14.00">(:hosp, :disease)</text>
+</g>
+<!-- s7&%2345;&gt;t12 -->
+<g id="edge34" class="edge">
+<title>s7&%2345;&gt;t12</title>
+<path fill="none" stroke="black" d="M626.43,-356.29C637.94,-352.66 651.1,-348.5 664.27,-344.35"/>
+<polygon fill="black" stroke="black" points="665.36,-347.68 673.84,-341.33 663.25,-341 665.36,-347.68"/>
+<text text-anchor="middle" x="650.98" y="-354.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t14 -->
+<g id="node24" class="node">
+<title>t14</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1188.07,-158.79 1068.07,-158.79 1068.07,-38.79 1188.07,-38.79 1188.07,-158.79"/>
+<text text-anchor="middle" x="1128.07" y="-95.09" font-family="Times,serif" font-size="14.00">(:die, :disease)</text>
+</g>
+<!-- s7&%2345;&gt;t14 -->
+<g id="edge8" class="edge">
+<title>s7&%2345;&gt;t14</title>
+<path fill="none" stroke="black" d="M603.42,-331.29C616.72,-300.14 640.03,-256.43 673.98,-230.79 722.59,-194.06 747.43,-210.65 805.98,-193.79 893.12,-168.68 993.28,-138.9 1058.25,-119.46"/>
+<polygon fill="black" stroke="black" points="1059.39,-122.77 1067.96,-116.55 1057.38,-116.06 1059.39,-122.77"/>
+<text text-anchor="middle" x="739.98" y="-234.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s8 -->
+<g id="node8" class="node">
+<title>s8</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="1568.92" cy="-348.79" rx="42.49" ry="42.49"/>
+<text text-anchor="middle" x="1568.92" y="-345.09" font-family="Times,serif" font-size="14.00">(:R, :V)</text>
+</g>
+<!-- s9 -->
+<g id="node9" class="node">
+<title>s9</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="1006.52" cy="-305.79" rx="43.59" ry="43.59"/>
+<text text-anchor="middle" x="1006.52" y="-302.09" font-family="Times,serif" font-size="14.00">(:H, :V)</text>
+</g>
+<!-- t13 -->
+<g id="node23" class="node">
+<title>t13</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1367.07,-386.29 1206.07,-386.29 1206.07,-225.29 1367.07,-225.29 1367.07,-386.29"/>
+<text text-anchor="middle" x="1286.57" y="-302.09" font-family="Times,serif" font-size="14.00">(:hosp_rec, :disease)</text>
+</g>
+<!-- s9&%2345;&gt;t13 -->
+<g id="edge27" class="edge">
+<title>s9&%2345;&gt;t13</title>
+<path fill="none" stroke="black" d="M1050.36,-305.79C1088.97,-305.79 1147,-305.79 1195.76,-305.79"/>
+<polygon fill="black" stroke="black" points="1196.01,-309.29 1206.01,-305.79 1196.01,-302.29 1196.01,-309.29"/>
+<text text-anchor="middle" x="1128.07" y="-309.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t15 -->
+<g id="node25" class="node">
+<title>t15</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1367.07,-207.29 1206.07,-207.29 1206.07,-46.29 1367.07,-46.29 1367.07,-207.29"/>
+<text text-anchor="middle" x="1286.57" y="-123.09" font-family="Times,serif" font-size="14.00">(:hosp_die, :disease)</text>
+</g>
+<!-- s9&%2345;&gt;t15 -->
+<g id="edge9" class="edge">
+<title>s9&%2345;&gt;t15</title>
+<path fill="none" stroke="black" d="M1043.59,-282.57C1082.35,-257.61 1145.41,-217.01 1197.44,-183.52"/>
+<polygon fill="black" stroke="black" points="1199.51,-186.35 1206.02,-178 1195.72,-180.47 1199.51,-186.35"/>
+<text text-anchor="middle" x="1128.07" y="-266.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s10 -->
+<g id="node10" class="node">
+<title>s10</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="1568.92" cy="-49.79" rx="42.49" ry="42.49"/>
+<text text-anchor="middle" x="1568.92" y="-46.09" font-family="Times,serif" font-size="14.00">(:D, :V)</text>
+</g>
+<!-- t1&%2345;&gt;s6 -->
+<g id="edge29" class="edge">
+<title>t1&%2345;&gt;s6</title>
+<path fill="none" stroke="black" d="M243.94,-552.79C255.6,-552.79 267.84,-552.79 279.34,-552.79"/>
+<polygon fill="black" stroke="black" points="279.64,-556.29 289.64,-552.79 279.64,-549.29 279.64,-556.29"/>
+<text text-anchor="middle" x="266.79" y="-556.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t2&%2345;&gt;s2 -->
+<g id="edge23" class="edge">
+<title>t2&%2345;&gt;s2</title>
+<path fill="none" stroke="black" d="M1242.77,-728.15C1187.65,-727.84 1095.68,-724.41 1068.07,-705.79 1045.14,-690.31 1030.28,-663.28 1021.03,-639.31"/>
+<polygon fill="black" stroke="black" points="1024.21,-637.83 1017.52,-629.62 1017.63,-640.21 1024.21,-637.83"/>
+<text text-anchor="middle" x="1128.07" y="-729.59" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- t3&%2345;&gt;s2 -->
+<g id="edge24" class="edge">
+<title>t3&%2345;&gt;s2</title>
+<path fill="none" stroke="black" d="M782.81,-490.45C825.79,-493.7 893.51,-503.2 944.98,-530.79 955.27,-536.3 964.97,-544.11 973.46,-552.29"/>
+<polygon fill="black" stroke="black" points="971.08,-554.86 980.6,-559.51 976.06,-549.94 971.08,-554.86"/>
+<text text-anchor="middle" x="884.48" y="-534.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t3&%2345;&gt;s7 -->
+<g id="edge10" class="edge">
+<title>t3&%2345;&gt;s7</title>
+<path fill="none" stroke="black" d="M697.42,-466.33C680.69,-456.43 661.68,-444.04 645.98,-430.79 637.07,-423.27 628.28,-414.33 620.4,-405.58"/>
+<polygon fill="black" stroke="black" points="622.96,-403.19 613.73,-397.98 617.7,-407.8 622.96,-403.19"/>
+<text text-anchor="middle" x="650.98" y="-442.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t4&%2345;&gt;s2 -->
+<g id="edge1" class="edge">
+<title>t4&%2345;&gt;s2</title>
+<path fill="none" stroke="black" d="M504.17,-570.24C510.11,-571.65 516.17,-572.9 521.99,-573.79 678.98,-597.75 867.82,-595.59 955.84,-592.82"/>
+<polygon fill="black" stroke="black" points="956.18,-596.31 966.06,-592.48 955.95,-589.32 956.18,-596.31"/>
+<text text-anchor="middle" x="650.98" y="-591.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t4&%2345;&gt;s7 -->
+<g id="edge30" class="edge">
+<title>t4&%2345;&gt;s7</title>
+<path fill="none" stroke="black" d="M490.65,-515.15C511.72,-483.24 540.36,-439.88 561.11,-408.46"/>
+<polygon fill="black" stroke="black" points="564.15,-410.21 566.74,-399.94 558.31,-406.35 564.15,-410.21"/>
+<text text-anchor="middle" x="526.99" y="-466.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t5&%2345;&gt;s7 -->
+<g id="edge22" class="edge">
+<title>t5&%2345;&gt;s7</title>
+<path fill="none" stroke="black" d="M698.45,-143.38C680.3,-145.28 659.9,-150.62 645.98,-163.79 603.8,-203.66 592.36,-272.06 589.78,-318.56"/>
+<polygon fill="black" stroke="black" points="586.27,-318.57 589.33,-328.71 593.27,-318.87 586.27,-318.57"/>
+<text text-anchor="middle" x="650.98" y="-167.59" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- t6&%2345;&gt;s3 -->
+<g id="edge2" class="edge">
+<title>t6&%2345;&gt;s3</title>
+<path fill="none" stroke="black" d="M1506.35,-712.35C1598.31,-733.97 1779.67,-767.37 1930.76,-738.79 1944.31,-736.22 1958.43,-731.65 1971.34,-726.64"/>
+<polygon fill="black" stroke="black" points="1972.99,-729.75 1980.94,-722.75 1970.36,-723.26 1972.99,-729.75"/>
+<text text-anchor="middle" x="1691.76" y="-751.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t7&%2345;&gt;s4 -->
+<g id="edge26" class="edge">
+<title>t7&%2345;&gt;s4</title>
+<path fill="none" stroke="black" d="M1352.59,-559.79C1401.47,-559.79 1467.64,-559.79 1513.68,-559.79"/>
+<polygon fill="black" stroke="black" points="1513.77,-563.29 1523.77,-559.79 1513.77,-556.29 1513.77,-563.29"/>
+<text text-anchor="middle" x="1445.57" y="-563.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t8&%2345;&gt;s3 -->
+<g id="edge11" class="edge">
+<title>t8&%2345;&gt;s3</title>
+<path fill="none" stroke="black" d="M1931.16,-674.84C1943.94,-679 1956.85,-683.21 1968.72,-687.08"/>
+<polygon fill="black" stroke="black" points="1967.83,-690.47 1978.42,-690.24 1970,-683.82 1967.83,-690.47"/>
+<text text-anchor="middle" x="1953.76" y="-686.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t9&%2345;&gt;s5 -->
+<g id="edge5" class="edge">
+<title>t9&%2345;&gt;s5</title>
+<path fill="none" stroke="black" d="M1752.1,-370.76C1757.92,-368.35 1763.86,-366.29 1769.76,-364.79 1839.1,-347.1 1860.03,-353.94 1930.76,-364.79 1943.55,-366.74 1957.02,-370.2 1969.51,-374.02"/>
+<polygon fill="black" stroke="black" points="1968.69,-377.44 1979.28,-377.15 1970.82,-370.77 1968.69,-377.44"/>
+<text text-anchor="middle" x="1850.26" y="-368.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t10&%2345;&gt;s5 -->
+<g id="edge32" class="edge">
+<title>t10&%2345;&gt;s5</title>
+<path fill="none" stroke="black" d="M1931.16,-433.31C1944.74,-427.12 1958.46,-420.85 1970.93,-415.16"/>
+<polygon fill="black" stroke="black" points="1972.56,-418.27 1980.2,-410.93 1969.65,-411.9 1972.56,-418.27"/>
+<text text-anchor="middle" x="1953.76" y="-428.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t11&%2345;&gt;s8 -->
+<g id="edge12" class="edge">
+<title>t11&%2345;&gt;s8</title>
+<path fill="none" stroke="black" d="M945.1,-415.81C1036.39,-416.6 1216.12,-415.03 1367.07,-394.79 1419.2,-387.79 1477.71,-373.66 1518.07,-362.89"/>
+<polygon fill="black" stroke="black" points="1519.18,-366.22 1527.92,-360.23 1517.35,-359.46 1519.18,-366.22"/>
+<text text-anchor="middle" x="1128.07" y="-419.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t12&%2345;&gt;s9 -->
+<g id="edge28" class="edge">
+<title>t12&%2345;&gt;s9</title>
+<path fill="none" stroke="black" d="M806.03,-317.1C851.12,-314.54 910.39,-311.18 952.59,-308.79"/>
+<polygon fill="black" stroke="black" points="952.87,-312.28 962.66,-308.22 952.48,-305.29 952.87,-312.28"/>
+<text text-anchor="middle" x="884.48" y="-320.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t13&%2345;&gt;s8 -->
+<g id="edge25" class="edge">
+<title>t13&%2345;&gt;s8</title>
+<path fill="none" stroke="black" d="M1367.16,-317.99C1415.31,-325.38 1475.28,-334.58 1517.08,-340.99"/>
+<polygon fill="black" stroke="black" points="1516.61,-344.46 1527.03,-342.51 1517.68,-337.54 1516.61,-344.46"/>
+<text text-anchor="middle" x="1445.57" y="-342.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t14&%2345;&gt;s10 -->
+<g id="edge21" class="edge">
+<title>t14&%2345;&gt;s10</title>
+<path fill="none" stroke="black" d="M1178.72,-38.65C1187.1,-31.8 1196.29,-25.84 1206.07,-21.79 1311.01,21.68 1447.59,-9.95 1519.21,-32.47"/>
+<polygon fill="black" stroke="black" points="1518.28,-35.85 1528.87,-35.58 1520.42,-29.19 1518.28,-35.85"/>
+<text text-anchor="middle" x="1286.57" y="-25.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t15&%2345;&gt;s10 -->
+<g id="edge33" class="edge">
+<title>t15&%2345;&gt;s10</title>
+<path fill="none" stroke="black" d="M1367.16,-104.93C1415.71,-91.59 1476.28,-74.95 1518.12,-63.46"/>
+<polygon fill="black" stroke="black" points="1519.09,-66.83 1527.81,-60.8 1517.24,-60.08 1519.09,-66.83"/>
+<text text-anchor="middle" x="1445.57" y="-103.59" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sirhd_vac), &quot;scenario3_sirhd_vac.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1268</code></pre><h2 id=".4-Age-stratification"><a class="docs-heading-anchor" href="#.4-Age-stratification">3.4 Age stratification</a><a id=".4-Age-stratification-1"></a><a class="docs-heading-anchor-permalink" href="#.4-Age-stratification" title="Permalink"></a></h2><p>SIRHD model with vaccination <em>and</em> age stratification.</p><pre><code class="language-julia hljs">for n in (2, 8)
+    names = [Symbol(&quot;Age$i&quot;) for i in 1:n]
+    typed_age = pairwise_id_typed_petri(infectious_ontology, :Pop, :infect, names)
+
+    typed_age_aug = add_reflexives(typed_age,
+                                   repeat([[:disease, :strata]], n),
+                                   infectious_ontology)
+
+    typed_sirhd_vac_age = typed_product(typed_sirhd_vac, typed_age_aug)
+    net = dom(typed_sirhd_vac_age)
+
+    write_json_acset(net, &quot;scenario3_sirhd_vac_age$n.json&quot;)
+
+    open(&quot;scenario3_sirhd_vac_age$n.svg&quot;, &quot;w&quot;) do io
+        show(io, MIME(&quot;image/svg+xml&quot;), Graph(net))
+    end
+end</code></pre><h2 id="Bonus:-Testing-of-infectives"><a class="docs-heading-anchor" href="#Bonus:-Testing-of-infectives">Bonus: Testing of infectives</a><a id="Bonus:-Testing-of-infectives-1"></a><a class="docs-heading-anchor-permalink" href="#Bonus:-Testing-of-infectives" title="Permalink"></a></h2><h3 id="SIRT"><a class="docs-heading-anchor" href="#SIRT">SIRT</a><a id="SIRT-1"></a><a class="docs-heading-anchor-permalink" href="#SIRT" title="Permalink"></a></h3><p>SIR model with tested and untested infectives</p><pre><code class="language-julia hljs">sirt_uwd = @relation (S, Iᵤ, Iₜ, R) where {(S::Pop, Iᵤ::Pop, Iₜ::Pop, R::Pop)} begin
+    infect(S, Iᵤ, Iᵤ, Iᵤ) # infᵤ
+    infect(S, Iₜ, Iᵤ, Iₜ) # infₜ
+    disease(Iᵤ, R) # recᵤ
+    disease(Iₜ, R) # recₜ
+    disease(Iᵤ, Iₜ) # test
+end
+
+sirt_names = [:infᵤ, :infₜ, :recᵤ, :recₜ, :test]
+typed_sirt = oapply_typed(infectious_ontology, sirt_uwd, sirt_names)
+
+Graph(dom(typed_sirt))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.50.0 (20211204.2007)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="590pt" height="210pt"
+ viewBox="0.00 0.00 590.00 209.50" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 205.5)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-205.5 586,-205.5 586,4 -4,4"/>
+<!-- s1 -->
+<g id="node1" class="node">
+<title>s1</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="18" cy="-162.5" rx="18" ry="18"/>
+<text text-anchor="middle" x="18" y="-158.8" font-family="Times,serif" font-size="14.00">S</text>
+</g>
+<!-- t1 -->
+<g id="node5" class="node">
+<title>t1</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="123,-158 82,-158 82,-117 123,-117 123,-158"/>
+<text text-anchor="middle" x="102.5" y="-133.8" font-family="Times,serif" font-size="14.00">infᵤ</text>
+</g>
+<!-- s1&%2345;&gt;t1 -->
+<g id="edge10" class="edge">
+<title>s1&%2345;&gt;t1</title>
+<path fill="none" stroke="black" d="M35.7,-157.44C46.14,-154.28 59.89,-150.11 72.12,-146.4"/>
+<polygon fill="black" stroke="black" points="73.37,-149.68 81.93,-143.43 71.34,-142.98 73.37,-149.68"/>
+<text text-anchor="middle" x="59" y="-155.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t2 -->
+<g id="node6" class="node">
+<title>t2</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="498,-108 459,-108 459,-69 498,-69 498,-108"/>
+<text text-anchor="middle" x="478.5" y="-84.8" font-family="Times,serif" font-size="14.00">infₜ</text>
+</g>
+<!-- s1&%2345;&gt;t2 -->
+<g id="edge4" class="edge">
+<title>s1&%2345;&gt;t2</title>
+<path fill="none" stroke="black" d="M34.73,-169.96C51.05,-177.01 77.48,-186.5 101.5,-186.5 101.5,-186.5 101.5,-186.5 394,-186.5 430.55,-186.5 454.47,-146.52 466.99,-117.63"/>
+<polygon fill="black" stroke="black" points="470.25,-118.91 470.8,-108.33 463.77,-116.26 470.25,-118.91"/>
+<text text-anchor="middle" x="228" y="-190.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s2 -->
+<g id="node2" class="node">
+<title>s2</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="187" cy="-107.5" rx="18" ry="18"/>
+<text text-anchor="middle" x="187" y="-103.8" font-family="Times,serif" font-size="14.00">Iᵤ</text>
+</g>
+<!-- s2&%2345;&gt;t1 -->
+<g id="edge12" class="edge">
+<title>s2&%2345;&gt;t1</title>
+<path fill="none" stroke="black" d="M169.68,-102.03C160.91,-99.99 150.07,-98.93 141,-102.5 136.38,-104.32 131.99,-107.01 127.95,-110.11"/>
+<polygon fill="black" stroke="black" points="125.42,-107.67 120.19,-116.88 130.02,-112.94 125.42,-107.67"/>
+<text text-anchor="middle" x="146" y="-106.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t3 -->
+<g id="node7" class="node">
+<title>t3</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="357,-171.5 313,-171.5 313,-127.5 357,-127.5 357,-171.5"/>
+<text text-anchor="middle" x="335" y="-145.8" font-family="Times,serif" font-size="14.00">recᵤ</text>
+</g>
+<!-- s2&%2345;&gt;t3 -->
+<g id="edge2" class="edge">
+<title>s2&%2345;&gt;t3</title>
+<path fill="none" stroke="black" d="M203.87,-114.37C209.8,-116.8 216.65,-119.44 223,-121.5 249.6,-130.13 280.5,-137.73 302.93,-142.83"/>
+<polygon fill="black" stroke="black" points="302.37,-146.29 312.9,-145.06 303.9,-139.46 302.37,-146.29"/>
+<text text-anchor="middle" x="228" y="-128.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t5 -->
+<g id="node9" class="node">
+<title>t5</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="295,-77.5 251,-77.5 251,-33.5 295,-33.5 295,-77.5"/>
+<text text-anchor="middle" x="273" y="-51.8" font-family="Times,serif" font-size="14.00">test</text>
+</g>
+<!-- s2&%2345;&gt;t5 -->
+<g id="edge8" class="edge">
+<title>s2&%2345;&gt;t5</title>
+<path fill="none" stroke="black" d="M200.69,-95.65C207.09,-90.04 215.14,-83.49 223,-78.5 228.86,-74.78 235.43,-71.29 241.8,-68.21"/>
+<polygon fill="black" stroke="black" points="243.28,-71.38 250.88,-64.01 240.34,-65.03 243.28,-71.38"/>
+<text text-anchor="middle" x="228" y="-82.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s3 -->
+<g id="node3" class="node">
+<title>s3</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="393" cy="-43.5" rx="18" ry="18"/>
+<text text-anchor="middle" x="393" y="-39.8" font-family="Times,serif" font-size="14.00">Iₜ</text>
+</g>
+<!-- s3&%2345;&gt;t2 -->
+<g id="edge11" class="edge">
+<title>s3&%2345;&gt;t2</title>
+<path fill="none" stroke="black" d="M410.98,-40.72C419.74,-40.05 430.36,-40.46 439,-44.5 446.76,-48.13 453.59,-54.14 459.25,-60.58"/>
+<polygon fill="black" stroke="black" points="456.83,-63.15 465.79,-68.81 462.31,-58.8 456.83,-63.15"/>
+<text text-anchor="middle" x="434" y="-48.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t4 -->
+<g id="node8" class="node">
+<title>t4</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="500,-43 457,-43 457,0 500,0 500,-43"/>
+<text text-anchor="middle" x="478.5" y="-17.8" font-family="Times,serif" font-size="14.00">recₜ</text>
+</g>
+<!-- s3&%2345;&gt;t4 -->
+<g id="edge6" class="edge">
+<title>s3&%2345;&gt;t4</title>
+<path fill="none" stroke="black" d="M402.51,-28.02C408.56,-18.74 417.61,-7.75 429,-2.5 434.93,0.23 441.37,-0.08 447.56,-1.95"/>
+<polygon fill="black" stroke="black" points="446.41,-5.26 456.98,-5.94 449.14,1.18 446.41,-5.26"/>
+<text text-anchor="middle" x="434" y="-6.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s4 -->
+<g id="node4" class="node">
+<title>s4</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="564" cy="-82.5" rx="18" ry="18"/>
+<text text-anchor="middle" x="564" y="-78.8" font-family="Times,serif" font-size="14.00">R</text>
+</g>
+<!-- t1&%2345;&gt;s2 -->
+<g id="edge7" class="edge">
+<title>t1&%2345;&gt;s2</title>
+<path fill="none" stroke="black" d="M123.05,-130.39C134.22,-126.33 148.35,-121.19 160.4,-116.81"/>
+<polygon fill="black" stroke="black" points="161.71,-120.06 169.91,-113.35 159.32,-113.48 161.71,-120.06"/>
+<text text-anchor="middle" x="146" y="-127.3" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- t2&%2345;&gt;s2 -->
+<g id="edge9" class="edge">
+<title>t2&%2345;&gt;s2</title>
+<path fill="none" stroke="black" d="M458.86,-89.72C409.3,-92.98 274.04,-101.85 215.55,-105.69"/>
+<polygon fill="black" stroke="black" points="214.99,-102.22 205.24,-106.37 215.45,-109.21 214.99,-102.22"/>
+<text text-anchor="middle" x="335" y="-103.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t2&%2345;&gt;s3 -->
+<g id="edge3" class="edge">
+<title>t2&%2345;&gt;s3</title>
+<path fill="none" stroke="black" d="M458.77,-78.41C446.78,-71.94 431.09,-63.49 418.15,-56.52"/>
+<polygon fill="black" stroke="black" points="419.78,-53.42 409.32,-51.75 416.46,-59.58 419.78,-53.42"/>
+<text text-anchor="middle" x="434" y="-71.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t3&%2345;&gt;s4 -->
+<g id="edge1" class="edge">
+<title>t3&%2345;&gt;s4</title>
+<path fill="none" stroke="black" d="M357.25,-147.26C389.05,-143.46 450.56,-134.36 500,-116.5 513.84,-111.5 528.34,-103.86 539.95,-97.08"/>
+<polygon fill="black" stroke="black" points="541.79,-100.05 548.56,-91.9 538.19,-94.06 541.79,-100.05"/>
+<text text-anchor="middle" x="434" y="-140.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t4&%2345;&gt;s4 -->
+<g id="edge13" class="edge">
+<title>t4&%2345;&gt;s4</title>
+<path fill="none" stroke="black" d="M500.14,-36.58C512.46,-45.58 528.11,-57.01 540.71,-66.22"/>
+<polygon fill="black" stroke="black" points="538.73,-69.11 548.87,-72.18 542.86,-63.45 538.73,-69.11"/>
+<text text-anchor="middle" x="523" y="-60.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t5&%2345;&gt;s3 -->
+<g id="edge5" class="edge">
+<title>t5&%2345;&gt;s3</title>
+<path fill="none" stroke="black" d="M295.1,-53.35C314.6,-51.37 343.7,-48.41 364.92,-46.25"/>
+<polygon fill="black" stroke="black" points="365.32,-49.73 374.91,-45.24 364.61,-42.77 365.32,-49.73"/>
+<text text-anchor="middle" x="335" y="-55.3" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sirt), &quot;scenario3_sirt.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">404</code></pre><h3 id="Testing-and-vaccination"><a class="docs-heading-anchor" href="#Testing-and-vaccination">Testing and vaccination</a><a id="Testing-and-vaccination-1"></a><a class="docs-heading-anchor-permalink" href="#Testing-and-vaccination" title="Permalink"></a></h3><p>Add vaccination to this model using stratification.</p><pre><code class="language-julia hljs">typed_sirt_aug = add_reflexives(typed_sirt, [[:strata], [], [], []], infectious_ontology)
+
+typed_sirt_vac = typed_product(typed_sirt_aug, typed_vaccination_aug)
+
+Graph(dom(typed_sirt_vac))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.50.0 (20211204.2007)
+ -->
+<!-- Title: G Pages: 1 -->
+<svg width="2096pt" height="736pt"
+ viewBox="0.00 0.00 2096.25 736.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 732)">
+<title>G</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-732 2092.25,-732 2092.25,4 -4,4"/>
+<!-- s1 -->
+<g id="node1" class="node">
+<title>s1</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="42.9" cy="-599" rx="42.79" ry="42.79"/>
+<text text-anchor="middle" x="42.9" y="-595.3" font-family="Times,serif" font-size="14.00">(:S, :U)</text>
+</g>
+<!-- t1 -->
+<g id="node9" class="node">
+<title>t1</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="243.79,-390 131.79,-390 131.79,-278 243.79,-278 243.79,-390"/>
+<text text-anchor="middle" x="187.79" y="-330.3" font-family="Times,serif" font-size="14.00">(:strata, :vac)</text>
+</g>
+<!-- s1&%2345;&gt;t1 -->
+<g id="edge18" class="edge">
+<title>s1&%2345;&gt;t1</title>
+<path fill="none" stroke="black" d="M58.42,-558.86C69.48,-529.88 85.83,-490.17 103.79,-457 114.43,-437.36 127.39,-416.91 139.87,-398.45"/>
+<polygon fill="black" stroke="black" points="142.81,-400.35 145.56,-390.12 137.03,-396.4 142.81,-400.35"/>
+<text text-anchor="middle" x="108.79" y="-460.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t2 -->
+<g id="node10" class="node">
+<title>t2</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="799.88,-494.5 706.88,-494.5 706.88,-401.5 799.88,-401.5 799.88,-494.5"/>
+<text text-anchor="middle" x="753.38" y="-444.3" font-family="Times,serif" font-size="14.00">(:infᵤ, :UU)</text>
+</g>
+<!-- s1&%2345;&gt;t2 -->
+<g id="edge37" class="edge">
+<title>s1&%2345;&gt;t2</title>
+<path fill="none" stroke="black" d="M67.52,-563.56C92.75,-530.42 136.03,-486 186.79,-486 186.79,-486 186.79,-486 601.18,-486 633.62,-486 668.83,-477.67 697.11,-468.81"/>
+<polygon fill="black" stroke="black" points="698.37,-472.08 706.8,-465.67 696.21,-465.42 698.37,-472.08"/>
+<text text-anchor="middle" x="395.99" y="-489.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t3 -->
+<g id="node11" class="node">
+<title>t3</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1218.67,-495 1126.67,-495 1126.67,-403 1218.67,-403 1218.67,-495"/>
+<text text-anchor="middle" x="1172.67" y="-445.3" font-family="Times,serif" font-size="14.00">(:infₜ, :UU)</text>
+</g>
+<!-- s1&%2345;&gt;t3 -->
+<g id="edge26" class="edge">
+<title>s1&%2345;&gt;t3</title>
+<path fill="none" stroke="black" d="M86.1,-599C114.55,-599 152.93,-599 186.79,-599 186.79,-599 186.79,-599 1022.27,-599 1054.47,-599 1066.45,-599.36 1092.17,-580 1117.64,-560.82 1136.69,-530.88 1149.75,-504.46"/>
+<polygon fill="black" stroke="black" points="1152.98,-505.82 1154.12,-495.29 1146.66,-502.81 1152.98,-505.82"/>
+<text text-anchor="middle" x="532.99" y="-602.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t4 -->
+<g id="node12" class="node">
+<title>t4</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1524.06,-577.5 1433.06,-577.5 1433.06,-486.5 1524.06,-486.5 1524.06,-577.5"/>
+<text text-anchor="middle" x="1478.56" y="-528.3" font-family="Times,serif" font-size="14.00">(:infᵤ, :UV)</text>
+</g>
+<!-- s1&%2345;&gt;t4 -->
+<g id="edge5" class="edge">
+<title>s1&%2345;&gt;t4</title>
+<path fill="none" stroke="black" d="M75.43,-627.3C102.83,-648.91 144.64,-675 186.79,-675 186.79,-675 186.79,-675 1326.37,-675 1380.17,-675 1422.53,-626.62 1448.57,-586.14"/>
+<polygon fill="black" stroke="black" points="1451.55,-587.98 1453.87,-577.64 1445.61,-584.27 1451.55,-587.98"/>
+<text text-anchor="middle" x="667.38" y="-678.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t5 -->
+<g id="node13" class="node">
+<title>t5</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1939.75,-644.5 1850.75,-644.5 1850.75,-555.5 1939.75,-555.5 1939.75,-644.5"/>
+<text text-anchor="middle" x="1895.25" y="-596.3" font-family="Times,serif" font-size="14.00">(:infₜ, :UV)</text>
+</g>
+<!-- s1&%2345;&gt;t5 -->
+<g id="edge17" class="edge">
+<title>s1&%2345;&gt;t5</title>
+<path fill="none" stroke="black" d="M67.22,-634.45C92.35,-667.91 135.7,-713 186.79,-713 186.79,-713 186.79,-713 1746.16,-713 1789.5,-713 1828.05,-682.03 1854.95,-652.51"/>
+<polygon fill="black" stroke="black" points="1857.89,-654.48 1861.88,-644.66 1852.64,-649.85 1857.89,-654.48"/>
+<text text-anchor="middle" x="897.38" y="-716.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s2 -->
+<g id="node2" class="node">
+<title>s2</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="600.18" cy="-410" rx="44.39" ry="44.39"/>
+<text text-anchor="middle" x="600.18" y="-406.3" font-family="Times,serif" font-size="14.00">(:Iᵤ, :U)</text>
+</g>
+<!-- s2&%2345;&gt;t2 -->
+<g id="edge12" class="edge">
+<title>s2&%2345;&gt;t2</title>
+<path fill="none" stroke="black" d="M644.44,-407.72C653.75,-408.03 663.46,-408.97 672.38,-411 680.64,-412.88 689.06,-415.67 697.2,-418.9"/>
+<polygon fill="black" stroke="black" points="696.01,-422.2 706.59,-422.86 698.73,-415.75 696.01,-422.2"/>
+<text text-anchor="middle" x="667.38" y="-414.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t6 -->
+<g id="node14" class="node">
+<title>t6</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="509.99,-323.5 418.99,-323.5 418.99,-232.5 509.99,-232.5 509.99,-323.5"/>
+<text text-anchor="middle" x="464.49" y="-274.3" font-family="Times,serif" font-size="14.00">(:infᵤ, :VU)</text>
+</g>
+<!-- s2&%2345;&gt;t6 -->
+<g id="edge25" class="edge">
+<title>s2&%2345;&gt;t6</title>
+<path fill="none" stroke="black" d="M567.94,-379.16C552.86,-364.26 534.35,-345.99 517.24,-329.1"/>
+<polygon fill="black" stroke="black" points="519.58,-326.49 510,-321.95 514.66,-331.47 519.58,-326.49"/>
+<text text-anchor="middle" x="532.99" y="-350.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t10 -->
+<g id="node18" class="node">
+<title>t10</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="960.38,-546 834.38,-546 834.38,-420 960.38,-420 960.38,-546"/>
+<text text-anchor="middle" x="897.38" y="-479.3" font-family="Times,serif" font-size="14.00">(:recᵤ, :disease)</text>
+</g>
+<!-- s2&%2345;&gt;t10 -->
+<g id="edge23" class="edge">
+<title>s2&%2345;&gt;t10</title>
+<path fill="none" stroke="black" d="M624.84,-447.03C640.58,-468.02 663.3,-492.37 690.38,-504 732.33,-522.03 783.37,-516.99 824.15,-507.35"/>
+<polygon fill="black" stroke="black" points="825.17,-510.7 834.02,-504.88 823.47,-503.91 825.17,-510.7"/>
+<text text-anchor="middle" x="667.38" y="-496.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t12 -->
+<g id="node20" class="node">
+<title>t12</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="816.38,-343 690.38,-343 690.38,-217 816.38,-217 816.38,-343"/>
+<text text-anchor="middle" x="753.38" y="-276.3" font-family="Times,serif" font-size="14.00">(:test, :disease)</text>
+</g>
+<!-- s2&%2345;&gt;t12 -->
+<g id="edge3" class="edge">
+<title>s2&%2345;&gt;t12</title>
+<path fill="none" stroke="black" d="M629.5,-376.82C639.44,-365.9 650.99,-354 662.38,-344 668.59,-338.54 675.26,-333.11 682.07,-327.85"/>
+<polygon fill="black" stroke="black" points="684.24,-330.59 690.09,-321.75 680.01,-325.01 684.24,-330.59"/>
+<text text-anchor="middle" x="667.38" y="-347.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s3 -->
+<g id="node3" class="node">
+<title>s3</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="1021.27" cy="-275" rx="42.79" ry="42.79"/>
+<text text-anchor="middle" x="1021.27" y="-271.3" font-family="Times,serif" font-size="14.00">(:Iₜ, :U)</text>
+</g>
+<!-- s3&%2345;&gt;t3 -->
+<g id="edge13" class="edge">
+<title>s3&%2345;&gt;t3</title>
+<path fill="none" stroke="black" d="M1053.54,-303.56C1066.7,-316.75 1081.42,-333.21 1092.17,-350 1103.56,-367.8 1097.98,-376.74 1110.17,-394 1112.97,-397.96 1116.1,-401.83 1119.43,-405.58"/>
+<polygon fill="black" stroke="black" points="1117.08,-408.19 1126.49,-413.06 1122.17,-403.38 1117.08,-408.19"/>
+<text text-anchor="middle" x="1087.17" y="-353.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t7 -->
+<g id="node15" class="node">
+<title>t7</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1217.17,-241.5 1128.17,-241.5 1128.17,-152.5 1217.17,-152.5 1217.17,-241.5"/>
+<text text-anchor="middle" x="1172.67" y="-193.3" font-family="Times,serif" font-size="14.00">(:infₜ, :VU)</text>
+</g>
+<!-- s3&%2345;&gt;t7 -->
+<g id="edge14" class="edge">
+<title>s3&%2345;&gt;t7</title>
+<path fill="none" stroke="black" d="M1041.94,-236.91C1051.83,-221.94 1065.33,-206.35 1082.17,-198 1093.05,-192.61 1105.62,-190.41 1117.84,-189.96"/>
+<polygon fill="black" stroke="black" points="1117.98,-193.46 1127.98,-189.97 1117.98,-186.46 1117.98,-193.46"/>
+<text text-anchor="middle" x="1087.17" y="-201.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t11 -->
+<g id="node19" class="node">
+<title>t11</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1235.17,-384.5 1110.17,-384.5 1110.17,-259.5 1235.17,-259.5 1235.17,-384.5"/>
+<text text-anchor="middle" x="1172.67" y="-318.3" font-family="Times,serif" font-size="14.00">(:recₜ, :disease)</text>
+</g>
+<!-- s3&%2345;&gt;t11 -->
+<g id="edge39" class="edge">
+<title>s3&%2345;&gt;t11</title>
+<path fill="none" stroke="black" d="M1064.17,-270.54C1073.51,-270.61 1083.28,-271.53 1092.17,-274 1094.94,-274.77 1097.7,-275.67 1100.46,-276.67"/>
+<polygon fill="black" stroke="black" points="1099.16,-279.92 1109.74,-280.43 1101.79,-273.43 1099.16,-279.92"/>
+<text text-anchor="middle" x="1087.17" y="-277.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s4 -->
+<g id="node4" class="node">
+<title>s4</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="1325.37" cy="-406" rx="44.39" ry="44.39"/>
+<text text-anchor="middle" x="1325.37" y="-402.3" font-family="Times,serif" font-size="14.00">(:R, :U)</text>
+</g>
+<!-- s5 -->
+<g id="node5" class="node">
+<title>s5</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="331.39" cy="-124" rx="41.69" ry="41.69"/>
+<text text-anchor="middle" x="331.39" y="-120.3" font-family="Times,serif" font-size="14.00">(:S, :V)</text>
+</g>
+<!-- s5&%2345;&gt;t6 -->
+<g id="edge30" class="edge">
+<title>s5&%2345;&gt;t6</title>
+<path fill="none" stroke="black" d="M359.23,-155.54C376.19,-175.46 398.54,-201.71 418.19,-224.79"/>
+<polygon fill="black" stroke="black" points="415.59,-227.14 424.74,-232.49 420.92,-222.6 415.59,-227.14"/>
+<text text-anchor="middle" x="395.99" y="-204.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s5&%2345;&gt;t7 -->
+<g id="edge44" class="edge">
+<title>s5&%2345;&gt;t7</title>
+<path fill="none" stroke="black" d="M373.13,-124C399.01,-124 433.21,-124 463.49,-124 463.49,-124 463.49,-124 1022.27,-124 1056.92,-124 1091.91,-140.04 1119.32,-157.09"/>
+<polygon fill="black" stroke="black" points="1117.63,-160.17 1127.94,-162.64 1121.42,-154.28 1117.63,-160.17"/>
+<text text-anchor="middle" x="667.38" y="-127.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t8 -->
+<g id="node16" class="node">
+<title>t8</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1523.06,-150.5 1434.06,-150.5 1434.06,-61.5 1523.06,-61.5 1523.06,-150.5"/>
+<text text-anchor="middle" x="1478.56" y="-102.3" font-family="Times,serif" font-size="14.00">(:infᵤ, :VV)</text>
+</g>
+<!-- s5&%2345;&gt;t8 -->
+<g id="edge2" class="edge">
+<title>s5&%2345;&gt;t8</title>
+<path fill="none" stroke="black" d="M351.3,-87.13C373,-50.58 412.26,0 463.49,0 463.49,0 463.49,0 1326.37,0 1368.01,0 1406.32,-27.29 1433.95,-54.18"/>
+<polygon fill="black" stroke="black" points="1431.57,-56.74 1441.1,-61.35 1436.53,-51.8 1431.57,-56.74"/>
+<text text-anchor="middle" x="897.38" y="-3.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t9 -->
+<g id="node17" class="node">
+<title>t9</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1938.75,-259.5 1851.75,-259.5 1851.75,-172.5 1938.75,-172.5 1938.75,-259.5"/>
+<text text-anchor="middle" x="1895.25" y="-212.3" font-family="Times,serif" font-size="14.00">(:infₜ, :VV)</text>
+</g>
+<!-- s5&%2345;&gt;t9 -->
+<g id="edge36" class="edge">
+<title>s5&%2345;&gt;t9</title>
+<path fill="none" stroke="black" d="M369.71,-107.11C395.5,-96.96 430.9,-86 463.49,-86 463.49,-86 463.49,-86 1088.17,-86 1216.04,-86 1245.44,-115.26 1369.56,-146 1390.18,-151.11 1394.73,-154.84 1415.56,-159 1496.08,-175.07 1734.39,-199.99 1841.3,-210.76"/>
+<polygon fill="black" stroke="black" points="1841.24,-214.27 1851.54,-211.78 1841.94,-207.3 1841.24,-214.27"/>
+<text text-anchor="middle" x="1087.17" y="-89.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s6 -->
+<g id="node6" class="node">
+<title>s6</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="1325.37" cy="-197" rx="42.49" ry="42.49"/>
+<text text-anchor="middle" x="1325.37" y="-193.3" font-family="Times,serif" font-size="14.00">(:Iᵤ, :V)</text>
+</g>
+<!-- s6&%2345;&gt;t4 -->
+<g id="edge10" class="edge">
+<title>s6&%2345;&gt;t4</title>
+<path fill="none" stroke="black" d="M1337.89,-237.66C1346.73,-269.11 1359.15,-313.75 1369.56,-353 1377.91,-384.47 1372.77,-395 1387.56,-424 1397.61,-443.71 1411.83,-463.01 1426.01,-479.71"/>
+<polygon fill="black" stroke="black" points="1423.74,-482.44 1432.95,-487.69 1429.03,-477.85 1423.74,-482.44"/>
+<text text-anchor="middle" x="1392.56" y="-443.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s6&%2345;&gt;t8 -->
+<g id="edge19" class="edge">
+<title>s6&%2345;&gt;t8</title>
+<path fill="none" stroke="black" d="M1355.05,-166.69C1364.76,-157.59 1376.06,-148.14 1387.56,-141 1398.91,-133.95 1411.91,-127.9 1424.44,-122.9"/>
+<polygon fill="black" stroke="black" points="1425.8,-126.13 1433.89,-119.29 1423.3,-119.59 1425.8,-126.13"/>
+<text text-anchor="middle" x="1392.56" y="-144.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t13 -->
+<g id="node21" class="node">
+<title>t13</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1685.56,-130 1559.56,-130 1559.56,-4 1685.56,-4 1685.56,-130"/>
+<text text-anchor="middle" x="1622.56" y="-63.3" font-family="Times,serif" font-size="14.00">(:recᵤ, :disease)</text>
+</g>
+<!-- s6&%2345;&gt;t13 -->
+<g id="edge41" class="edge">
+<title>s6&%2345;&gt;t13</title>
+<path fill="none" stroke="black" d="M1338.64,-156.86C1351.62,-122.17 1375.83,-74.21 1415.56,-52 1455.99,-29.41 1508.05,-33.43 1549.72,-42.96"/>
+<polygon fill="black" stroke="black" points="1548.99,-46.38 1559.53,-45.35 1550.65,-39.58 1548.99,-46.38"/>
+<text text-anchor="middle" x="1392.56" y="-75.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t15 -->
+<g id="node23" class="node">
+<title>t15</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1541.56,-373 1415.56,-373 1415.56,-247 1541.56,-247 1541.56,-373"/>
+<text text-anchor="middle" x="1478.56" y="-306.3" font-family="Times,serif" font-size="14.00">(:test, :disease)</text>
+</g>
+<!-- s6&%2345;&gt;t15 -->
+<g id="edge34" class="edge">
+<title>s6&%2345;&gt;t15</title>
+<path fill="none" stroke="black" d="M1359.92,-222.08C1373.98,-232.58 1390.88,-245.21 1407.42,-257.58"/>
+<polygon fill="black" stroke="black" points="1405.4,-260.44 1415.51,-263.62 1409.59,-254.83 1405.4,-260.44"/>
+<text text-anchor="middle" x="1392.56" y="-254.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s7 -->
+<g id="node7" class="node">
+<title>s7</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="1745.16" cy="-317" rx="41.69" ry="41.69"/>
+<text text-anchor="middle" x="1745.16" y="-313.3" font-family="Times,serif" font-size="14.00">(:Iₜ, :V)</text>
+</g>
+<!-- s7&%2345;&gt;t5 -->
+<g id="edge1" class="edge">
+<title>s7&%2345;&gt;t5</title>
+<path fill="none" stroke="black" d="M1760.8,-355.79C1771.83,-383.85 1787.9,-422.4 1804.75,-455 1820.94,-486.3 1841.44,-519.86 1858.73,-546.81"/>
+<polygon fill="black" stroke="black" points="1855.86,-548.81 1864.23,-555.31 1861.74,-545.01 1855.86,-548.81"/>
+<text text-anchor="middle" x="1809.75" y="-474.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s7&%2345;&gt;t9 -->
+<g id="edge24" class="edge">
+<title>s7&%2345;&gt;t9</title>
+<path fill="none" stroke="black" d="M1780.13,-293.83C1798.82,-281.08 1822.39,-265.01 1843.24,-250.79"/>
+<polygon fill="black" stroke="black" points="1845.4,-253.56 1851.69,-245.03 1841.45,-247.77 1845.4,-253.56"/>
+<text text-anchor="middle" x="1809.75" y="-279.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t14 -->
+<g id="node22" class="node">
+<title>t14</title>
+<polygon fill="%23e28f41" stroke="%23e28f41" points="1957.75,-402.5 1832.75,-402.5 1832.75,-277.5 1957.75,-277.5 1957.75,-402.5"/>
+<text text-anchor="middle" x="1895.25" y="-336.3" font-family="Times,serif" font-size="14.00">(:recₜ, :disease)</text>
+</g>
+<!-- s7&%2345;&gt;t14 -->
+<g id="edge35" class="edge">
+<title>s7&%2345;&gt;t14</title>
+<path fill="none" stroke="black" d="M1786.63,-323.28C1797.84,-325.03 1810.37,-326.97 1822.79,-328.9"/>
+<polygon fill="black" stroke="black" points="1822.29,-332.37 1832.71,-330.44 1823.36,-325.45 1822.29,-332.37"/>
+<text text-anchor="middle" x="1809.75" y="-331.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- s8 -->
+<g id="node8" class="node">
+<title>s8</title>
+<ellipse fill="%236c9ac3" stroke="%236c9ac3" cx="2046" cy="-103" rx="42.49" ry="42.49"/>
+<text text-anchor="middle" x="2046" y="-99.3" font-family="Times,serif" font-size="14.00">(:R, :V)</text>
+</g>
+<!-- t1&%2345;&gt;s5 -->
+<g id="edge7" class="edge">
+<title>t1&%2345;&gt;s5</title>
+<path fill="none" stroke="black" d="M226.55,-278C250.17,-242.98 280.1,-198.58 301.76,-166.46"/>
+<polygon fill="black" stroke="black" points="304.67,-168.41 307.35,-158.16 298.86,-164.5 304.67,-168.41"/>
+<text text-anchor="middle" x="266.79" y="-226.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t2&%2345;&gt;s2 -->
+<g id="edge27" class="edge">
+<title>t2&%2345;&gt;s2</title>
+<path fill="none" stroke="black" d="M706.56,-436.95C692.38,-433.49 676.72,-429.63 662.38,-426 659.39,-425.24 656.31,-424.46 653.22,-423.67"/>
+<polygon fill="black" stroke="black" points="653.85,-420.22 643.3,-421.11 652.1,-426.99 653.85,-420.22"/>
+<text text-anchor="middle" x="667.38" y="-431.8" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- t3&%2345;&gt;s2 -->
+<g id="edge42" class="edge">
+<title>t3&%2345;&gt;s2</title>
+<path fill="none" stroke="black" d="M1126.49,-434.52C1084.1,-421.69 1018.66,-403.82 960.38,-396 841.43,-380.05 809.85,-381.72 690.38,-393 678.36,-394.13 665.55,-396.11 653.5,-398.32"/>
+<polygon fill="black" stroke="black" points="652.76,-394.9 643.59,-400.23 654.08,-401.78 652.76,-394.9"/>
+<text text-anchor="middle" x="897.38" y="-399.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t3&%2345;&gt;s3 -->
+<g id="edge32" class="edge">
+<title>t3&%2345;&gt;s3</title>
+<path fill="none" stroke="black" d="M1126.43,-414.65C1120.26,-408.34 1114.55,-401.39 1110.17,-394 1092.24,-363.77 1112.87,-345.4 1092.17,-317 1086.29,-308.93 1078.35,-302.12 1069.93,-296.49"/>
+<polygon fill="black" stroke="black" points="1071.76,-293.51 1061.4,-291.25 1068.09,-299.47 1071.76,-293.51"/>
+<text text-anchor="middle" x="1087.17" y="-320.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t4&%2345;&gt;s2 -->
+<g id="edge8" class="edge">
+<title>t4&%2345;&gt;s2</title>
+<path fill="none" stroke="black" d="M1433,-545.14C1403.12,-552.82 1362.72,-561 1326.37,-561 752.38,-561 752.38,-561 752.38,-561 693.55,-561 649.59,-503.06 624.65,-458.96"/>
+<polygon fill="black" stroke="black" points="627.64,-457.15 619.76,-450.07 621.51,-460.52 627.64,-457.15"/>
+<text text-anchor="middle" x="1087.17" y="-564.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t4&%2345;&gt;s6 -->
+<g id="edge11" class="edge">
+<title>t4&%2345;&gt;s6</title>
+<path fill="none" stroke="black" d="M1456.93,-486.29C1428.33,-422.92 1376.87,-308.89 1347.83,-244.55"/>
+<polygon fill="black" stroke="black" points="1351.01,-243.1 1343.71,-235.43 1344.63,-245.98 1351.01,-243.1"/>
+<text text-anchor="middle" x="1392.56" y="-357.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t5&%2345;&gt;s2 -->
+<g id="edge22" class="edge">
+<title>t5&%2345;&gt;s2</title>
+<path fill="none" stroke="black" d="M1850.58,-616.88C1821.45,-626.63 1782.07,-637 1746.16,-637 752.38,-637 752.38,-637 752.38,-637 669.28,-637 629.06,-530.33 611.98,-463.23"/>
+<polygon fill="black" stroke="black" points="615.31,-462.11 609.53,-453.23 608.51,-463.78 615.31,-462.11"/>
+<text text-anchor="middle" x="1258.17" y="-640.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t5&%2345;&gt;s7 -->
+<g id="edge15" class="edge">
+<title>t5&%2345;&gt;s7</title>
+<path fill="none" stroke="black" d="M1873.68,-555.37C1858.1,-522.15 1835.86,-475.84 1814.75,-436 1801.46,-410.9 1785.69,-383.4 1772.62,-361.17"/>
+<polygon fill="black" stroke="black" points="1775.49,-359.13 1767.39,-352.3 1769.46,-362.69 1775.49,-359.13"/>
+<text text-anchor="middle" x="1809.75" y="-439.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t6&%2345;&gt;s2 -->
+<g id="edge16" class="edge">
+<title>t6&%2345;&gt;s2</title>
+<path fill="none" stroke="black" d="M510.27,-299.01C520,-304.71 529.81,-311.44 537.99,-319 551.42,-331.43 563.39,-347.36 573.11,-362.4"/>
+<polygon fill="black" stroke="black" points="570.29,-364.5 578.56,-371.13 576.23,-360.79 570.29,-364.5"/>
+<text text-anchor="middle" x="532.99" y="-322.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t6&%2345;&gt;s6 -->
+<g id="edge6" class="edge">
+<title>t6&%2345;&gt;s6</title>
+<path fill="none" stroke="black" d="M493.23,-232.49C516.88,-199.99 554.16,-162 599.18,-162 599.18,-162 599.18,-162 898.38,-162 1048.3,-162 1090.77,-102.69 1235.17,-143 1251.92,-147.68 1268.66,-156.45 1283.04,-165.58"/>
+<polygon fill="black" stroke="black" points="1281.39,-168.69 1291.66,-171.28 1285.25,-162.85 1281.39,-168.69"/>
+<text text-anchor="middle" x="897.38" y="-165.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t7&%2345;&gt;s3 -->
+<g id="edge43" class="edge">
+<title>t7&%2345;&gt;s3</title>
+<path fill="none" stroke="black" d="M1127.94,-219.83C1109.3,-229.56 1087.54,-240.93 1068.62,-250.8"/>
+<polygon fill="black" stroke="black" points="1066.83,-247.79 1059.59,-255.52 1070.07,-253.99 1066.83,-247.79"/>
+<text text-anchor="middle" x="1087.17" y="-246.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t7&%2345;&gt;s6 -->
+<g id="edge29" class="edge">
+<title>t7&%2345;&gt;s6</title>
+<path fill="none" stroke="black" d="M1217.26,-197C1234.63,-197 1254.77,-197 1272.85,-197"/>
+<polygon fill="black" stroke="black" points="1272.95,-200.5 1282.95,-197 1272.95,-193.5 1272.95,-200.5"/>
+<text text-anchor="middle" x="1258.17" y="-200.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t8&%2345;&gt;s6 -->
+<g id="edge40" class="edge">
+<title>t8&%2345;&gt;s6</title>
+<path fill="none" stroke="black" d="M1433.72,-133.8C1422.03,-141.1 1409.36,-148.92 1397.56,-156 1389.03,-161.12 1379.86,-166.49 1371.04,-171.6"/>
+<polygon fill="black" stroke="black" points="1369.28,-168.58 1362.37,-176.6 1372.78,-174.64 1369.28,-168.58"/>
+<text text-anchor="middle" x="1392.56" y="-165.8" font-family="Times,serif" font-size="14.00">2</text>
+</g>
+<!-- t9&%2345;&gt;s6 -->
+<g id="edge31" class="edge">
+<title>t9&%2345;&gt;s6</title>
+<path fill="none" stroke="black" d="M1851.57,-214.57C1749.01,-211.14 1488.99,-202.44 1377.94,-198.73"/>
+<polygon fill="black" stroke="black" points="1377.78,-195.22 1367.66,-198.38 1377.54,-202.21 1377.78,-195.22"/>
+<text text-anchor="middle" x="1622.56" y="-212.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t9&%2345;&gt;s7 -->
+<g id="edge9" class="edge">
+<title>t9&%2345;&gt;s7</title>
+<path fill="none" stroke="black" d="M1851.36,-229.98C1835.92,-236.07 1818.85,-244.11 1804.75,-254 1795.48,-260.5 1786.57,-268.67 1778.61,-276.96"/>
+<polygon fill="black" stroke="black" points="1775.8,-274.84 1771.58,-284.56 1780.94,-279.59 1775.8,-274.84"/>
+<text text-anchor="middle" x="1809.75" y="-257.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t10&%2345;&gt;s4 -->
+<g id="edge21" class="edge">
+<title>t10&%2345;&gt;s4</title>
+<path fill="none" stroke="black" d="M960.55,-493.64C1044.09,-506.8 1187.61,-525.02 1235.17,-504 1259.77,-493.13 1280.5,-471.75 1295.77,-451.73"/>
+<polygon fill="black" stroke="black" points="1298.66,-453.7 1301.76,-443.56 1293.02,-449.55 1298.66,-453.7"/>
+<text text-anchor="middle" x="1087.17" y="-513.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t11&%2345;&gt;s4 -->
+<g id="edge4" class="edge">
+<title>t11&%2345;&gt;s4</title>
+<path fill="none" stroke="black" d="M1235.4,-356.41C1249.4,-364.21 1264.05,-372.38 1277.33,-379.78"/>
+<polygon fill="black" stroke="black" points="1275.84,-382.96 1286.27,-384.77 1279.24,-376.84 1275.84,-382.96"/>
+<text text-anchor="middle" x="1258.17" y="-374.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t12&%2345;&gt;s3 -->
+<g id="edge20" class="edge">
+<title>t12&%2345;&gt;s3</title>
+<path fill="none" stroke="black" d="M816.38,-278.83C862.41,-277.97 924.49,-276.8 968.01,-275.98"/>
+<polygon fill="black" stroke="black" points="968.17,-279.48 978.1,-275.79 968.04,-272.48 968.17,-279.48"/>
+<text text-anchor="middle" x="897.38" y="-282.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t13&%2345;&gt;s8 -->
+<g id="edge28" class="edge">
+<title>t13&%2345;&gt;s8</title>
+<path fill="none" stroke="black" d="M1685.75,-72.31C1769.23,-79.44 1916.01,-91.98 1993.59,-98.61"/>
+<polygon fill="black" stroke="black" points="1993.35,-102.1 2003.61,-99.46 1993.95,-95.13 1993.35,-102.1"/>
+<text text-anchor="middle" x="1809.75" y="-87.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t14&%2345;&gt;s8 -->
+<g id="edge33" class="edge">
+<title>t14&%2345;&gt;s8</title>
+<path fill="none" stroke="black" d="M1951.07,-277.41C1953.39,-274.27 1955.63,-271.13 1957.75,-268 1983.3,-230.39 2007.05,-184.44 2023.3,-150.59"/>
+<polygon fill="black" stroke="black" points="2026.55,-151.92 2027.68,-141.38 2020.23,-148.91 2026.55,-151.92"/>
+<text text-anchor="middle" x="1980.75" y="-241.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+<!-- t15&%2345;&gt;s7 -->
+<g id="edge38" class="edge">
+<title>t15&%2345;&gt;s7</title>
+<path fill="none" stroke="black" d="M1541.6,-311.64C1587.84,-312.86 1650.21,-314.51 1693.48,-315.66"/>
+<polygon fill="black" stroke="black" points="1693.41,-319.16 1703.5,-315.92 1693.59,-312.16 1693.41,-319.16"/>
+<text text-anchor="middle" x="1622.56" y="-319.8" font-family="Times,serif" font-size="14.00">1</text>
+</g>
+</g>
+</svg>
+'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sirt_vac), &quot;scenario3_sirt_vac.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1362</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../Scenario2/Evaluation_Scenario_2/">« Evaluation Scenario 2</a><a class="docs-footer-nextpage" href="../../Scenario3/Evaluation_Scenario_3/">Evaluation Scenario 3 »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 2 February 2023 14:55">Thursday 2 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
