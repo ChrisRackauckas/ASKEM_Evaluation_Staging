@@ -128,9 +128,9 @@ sol = solve(_prob_train, saveat = t_train);
 
 ```@example evalscenario3
 plot(map(data_train) do (var, num)
-    plot(sol, idxs = var)
-    plot!(t_train, num)
-end..., dpi = 300)
+         plot(sol, idxs = var)
+         plot!(t_train, num)
+     end..., dpi = 300)
 ```
 
 ```@example evalscenario3
@@ -209,8 +209,8 @@ to be so far off that it leads to more error than a bad fit of the infected. The
 to this data.
 
 Another way to see this result is to notice that both the number of susceptible individuals and recovered individuals
-are both dropping exponentially at a growing rate at the end of the time after the peak of the infection, which is 
-incompatible with the SIR model's assumptions that the rate of S -> I and I -> R would both drop after the infection's 
+are both dropping exponentially at a growing rate at the end of the time after the peak of the infection, which is
+incompatible with the SIR model's assumptions that the rate of S -> I and I -> R would both drop after the infection's
 peak.
 
 ### SIR Forecasting Plots
@@ -336,7 +336,7 @@ Once again it's clear that the model is unable to fit the data well. The same is
 The S, R, and D data all increase the rate of growth after the infection's peak, which is impossible to occur in
 the SIRHD model and thus suggests that the infection peak might be an anomoly of the data. In either case, it's
 impossible to both fit the non-decreasing derivatives of these 3 data series while also fitting the peak of the
-infection, with this model. Additionally. for no parameters does the SIRHD model emit oscillatory solutions as seen 
+infection, with this model. Additionally. for no parameters does the SIRHD model emit oscillatory solutions as seen
 in the data, which suggests a model deficiency.
 
 ### Evaluate Model Forecasts
@@ -610,15 +610,15 @@ The fits against the historical data, both training and test periods, are unrema
 in the text. The SIR/SIRHD/etc. models all have clear limitations which can easily be proven from their analytical form
 this includes:
 
-1. Only a single infection peak or monotonic results in I.
-2. Rate decreases required after the infection peak for S, R, and D.
-3. H also can only have simple peaking results, or monotonic results.
+ 1. Only a single infection peak or monotonic results in I.
+ 2. Rate decreases required after the infection peak for S, R, and D.
+ 3. H also can only have simple peaking results, or monotonic results.
 
 These 3 points are directly incompatible with the real-world data. This is because the real-world data has the properties
 that:
 
-1. The rate of decrease in S, R, and D do not decrease after the peak of the infection.
-2. The H data is non-monotonic.
+ 1. The rate of decrease in S, R, and D do not decrease after the peak of the infection.
+ 2. The H data is non-monotonic.
 
 Since these facts are directly incompatible with the SIR and SIRHD models, there is no set of parameters that is able to
 fit all of the qualitative features of the model. Instead, the model fit tends to fit S and R, or S, R, and D with disreguard
@@ -634,7 +634,7 @@ the final which includes reinfection.
 The fits from the data seem reasonable according to literature on the analytical results of the SIR and SIRHD type models.
 https://bmcinfectdis.biomedcentral.com/articles/10.1186/s12879-022-07403-5 describes how interventions are required in the
 model in order to be able to model second wave events, which makes it clear that a second wave cannot be modeled in these
-models and thus the forecast predictions being incorrect is a known defficiency of the model. 
+models and thus the forecast predictions being incorrect is a known defficiency of the model.
 https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7997702/ provides a full derivation for the infection peak and shows that the
 calculation has a unique zero derivative point, which directly proves the assertion that there cannot be a second wave
-in the SIR and SIRHD models. 
+in the SIR and SIRHD models.
