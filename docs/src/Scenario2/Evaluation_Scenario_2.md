@@ -304,7 +304,7 @@ plot(sol_opt_p, idxs = [threshold_observable], lab = "total infected", leg = :bo
 
 ### Form SIDARTHE-V model
 
-This forms SIDARTHE-V by manually adding the V state and vax transition. It compares the models via maximum common subset, plotting the common subgraph (the original SIDARTHE), the negation (the new transition and vax state), and the complement (the new transition from susceptible to vax).
+This forms SIDARTHE-V by manually adding the V state and vax transition. It compares the models via maximum common subacset, plotting the common subgraph (the original SIDARTHE), the negation (the new transition and vax state), and the complement (the new transition from susceptible to vax).
 
 ```@example scenario2
 import Graphviz_jll
