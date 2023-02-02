@@ -189,7 +189,7 @@ More specifically, The change ratios, ratios estimating the change in seropreval
 case prevalence, can be used as a multiplier to enhance the understanding of the infection burden represented by officially
 reported case rates. Yet, the ratio reached a low point from April 21 to July 1 2021 (~ the beginning of the training period),
 (1.1, CI: 0.6–1.7). These ratios increased to 2.3 (CI: 2.0–2.5) from July 1 to September 20 2021 (~ the end of the training period)
-[From https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9716971/pdf/main.pdf]. Therefore, other factors, such as violation of the 
+[From https://www.ncbi.nlm.nih.gov/pmc/articles/PMC9716971/pdf/main.pdf]. Therefore, other factors, such as violation of the
 well-mixed assumption of the SIR model, mutation or behavior induced changes in the infection rate might be a more likely cause for
 the delayed onset of the pandemic wave in summer 2021.
 
@@ -605,16 +605,16 @@ savefig("test_fit_S3_Q5.png")
 
 The other models were unable to fit the data, especially the forecasts, because of the property of monotonicity after the
 infection peak. The SIRHD model with reinfections does not have this property, so does this make it able to fit such
-data? Absolutely not! 
+data? Absolutely not!
 
 In order to have the non-monotonicity property and repeat infections, the SIRHD model relies on
 the R -> S transition. What this means is that these properties are only possible if S is non-monotonic. S has to increase
 in order for this to occur. Since S is monotonic in the data, a second wave is not possible. In other words:
 
-1. Parameters which fit the second wave characteristics of the I data are required to have non-monotonicity in S, which thus
-   gives a qualitatively bad fit to S. This then leads to non-monotonicity in R as well.
-2. Parameters which fit S and R must give a single wave characteristic, and thus will have a qualitatively bad fit against
-   I.
+ 1. Parameters which fit the second wave characteristics of the I data are required to have non-monotonicity in S, which thus
+    gives a qualitatively bad fit to S. This then leads to non-monotonicity in R as well.
+ 2. Parameters which fit S and R must give a single wave characteristic, and thus will have a qualitatively bad fit against
+    I.
 
 The global optima of the parameters seems to pick the result (1), though both give qualitatively "eyeball" poor fits
 due to this model property.
