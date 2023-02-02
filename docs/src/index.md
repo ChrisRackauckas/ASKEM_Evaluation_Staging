@@ -3,7 +3,7 @@
 ## Reproducing the Results
 
 This system is a fully reproducer builder that generates the results from scratch. It downloads Julia,
-downloads the packages, builds the results, and then hosts them at the website 
+downloads the packages, builds the results, and then hosts them at the website
 https://chrisrackauckas.github.io/ASKEM_Evaluation_Staging/dev/.
 
 ### Running the Builder
@@ -13,7 +13,7 @@ job generating the results, and if successful (green) then its artifacts are pus
 
 ### Running Locally via the `make.jl` Script
 
-To run locally, start by downloading the Github repository and set the current directory to 
+To run locally, start by downloading the Github repository and set the current directory to
 `ASKEM_Evaluation_Staging/docs`. Then open Julia and run:
 
 ```julia
@@ -21,14 +21,14 @@ cd("to the ASKEM_Evaluation_Staging/docs directory")
 
 # Setup packages
 using Pkg
-Pkg.activate(".") 
+Pkg.activate(".")
 Pkg.instantiate()
 
 # Run the build script
 include("make.jl")
 ```
 
-The outputs will be generated into the `ASKEM_Evaluation_Staging/docs/build` directory and can be opened in 
+The outputs will be generated into the `ASKEM_Evaluation_Staging/docs/build` directory and can be opened in
 a web browser.
 
 ### Running Individual Files
@@ -41,7 +41,7 @@ cd("to the ASKEM_Evaluation_Staging/docs directory")
 
 # Setup packages
 using Pkg
-Pkg.activate(".") 
+Pkg.activate(".")
 Pkg.instantiate()
 ```
 

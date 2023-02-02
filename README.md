@@ -11,7 +11,7 @@ cd("to the ASKEM_Evaluation_Staging/docs directory")
 
 # Setup packages
 using Pkg
-Pkg.activate(".") 
+Pkg.activate(".")
 Pkg.instantiate()
 
 # Run the build script

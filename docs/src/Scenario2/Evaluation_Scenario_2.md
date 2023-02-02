@@ -27,14 +27,21 @@ myread(fn) = readSBML(fn, doc -> begin
 
 m = myread(fn)
 
-paramvals = map(name->m.parameters[string(name)].value, tnames(sidarthe))
-namemap = Dict(:S => "Susceptible", :I => "Infected", :D => "Diagnosed", :A => "Ailing", :R => "Recognized",
+paramvals = map(name -> m.parameters[string(name)].value, tnames(sidarthe))
+namemap = Dict(:S => "Susceptible", :I => "Infected", :D => "Diagnosed", :A => "Ailing",
+               :R => "Recognized",
                :T => "Threatened", :H => "Healed", :E => "Extinct")
-u0vals = map(name->m.species[namemap[name]].initial_concentration, snames(sidarthe))
+u0vals = map(name -> m.species[namemap[name]].initial_concentration, snames(sidarthe))
 let S, I, D, A, R, T, H, E
     @unpack S, I, D, A, R, T, H, E = sys
     global Infected, Healed, Extinct, Diagnosed, Ailing, Recognized, Susceptible, Threatened
-    Infected, Healed, Extinct, Diagnosed, Ailing, Recognized, Susceptible, Threatened = I, H, E, D, A, R, S, T
+    Infected, Healed, Extinct, Diagnosed, Ailing, Recognized, Susceptible, Threatened = I,
+                                                                                        H,
+                                                                                        E,
+                                                                                        D,
+                                                                                        A,
+                                                                                        R,
+                                                                                        S, T
 end
 @unpack beta, gamma, delta, alpha, epsilon, kappa, sigma, rho, xi, mu, tau, lambda, eta, nu, zeta, theta = sys
 ps = [alpha, epsilon, gamma, beta, delta, mu, nu, lambda, rho, kappa, xi, sigma, zeta, eta]
@@ -154,6 +161,7 @@ xmax, xmaxval = get_max_t(prob_test1, sum(idart))
 ```
 
 This test passes with SBML.jl
+
 ```@example scenario2
 @test_broken isapprox(xmaxval, 0.002; atol = 0.01)
 ```
@@ -184,7 +192,7 @@ compute server.
 pbounds = [param => [
                0.5 * defaultsmap[param],
                2 * defaultsmap[param],
-    ] for param in parameters(sys)]
+           ] for param in parameters(sys)]
 sensres = get_sensitivity(probne, 100.0, Infected, pbounds; samples = 200)
 sensres_vec = collect(sensres)
 sort(filter(x -> endswith(string(x[1]), "_first_order"), sensres_vec), by = x -> abs(x[2]),
@@ -202,7 +210,7 @@ sort(filter(x -> endswith(string(x[1]), "_total_order"), sensres_vec), by = x ->
 ```
 
 ```@example scenario2
-create_sensitivity_plot(sensres, pbounds, true, ylims = (-0.2, 1.0), size=(800, 800))
+create_sensitivity_plot(sensres, pbounds, true, ylims = (-0.2, 1.0), size = (800, 800))
 ```
 
 ### Minimum Parameter Threshold
@@ -262,18 +270,16 @@ This forms SIDARTHE-V by manually adding the V state and vax transition. It comp
 import Graphviz_jll
 sidarthe_v = read_json_acset(LabelledPetriNet, "sidarthe_v.json")
 
-mca_sidarthe_v = mca(sidarthe,sidarthe_v)
+mca_sidarthe_v = mca(sidarthe, sidarthe_v)
 AlgebraicPetri.Graph(mca_sidarthe_v[1])
 ```
 
 ```@example scenario2
-sidarthe_sub = Subobject(
-  sidarthe_v,
-  S=parts(sidarthe, :S),
-  T=parts(sidarthe, :T),
-  I=parts(sidarthe, :I),
-  O=parts(sidarthe, :O)
-)
+sidarthe_sub = Subobject(sidarthe_v,
+                         S = parts(sidarthe, :S),
+                         T = parts(sidarthe, :T),
+                         I = parts(sidarthe, :I),
+                         O = parts(sidarthe, :O))
 AlgebraicPetri.Graph(dom(hom(negate(sidarthe_sub))))
 ```
 
@@ -296,9 +302,9 @@ u0valsv = [u0vals; 0.0]  # 0 vaccinated initially
 @unpack beta, gamma, delta, alpha, epsilon, kappa, sigma, rho, xi, mu, tau1, tau2, lambda, eta, nu, zeta, theta, vax = sysv
 phi = vax
 p_map = Dict([parameters(sys) .=> paramvals
-         tau2 => defaultsmap[tau]
-         tau1 => defaultsmap[tau] / 3
-         vax => 0.0])
+              tau2 => defaultsmap[tau]
+              tau1 => defaultsmap[tau] / 3
+              vax => 0.0])
 sts_map = Dict(states(sysv) .=> u0valsv)
 using ModelingToolkit: @set!
 defs_v2 = merge(sts_map, p_map)
@@ -373,7 +379,7 @@ opt_results = map(intervention_parameters) do (intervention_p, bounds)
                                                  [intervention_p], [0.0],
                                                  [1.0],
                                                  (30.0, 100.0);
-                                                 maxtime = 10);
+                                                 maxtime = 10)
 end;
 map(first, opt_results)
 ```
@@ -383,7 +389,7 @@ plts = map(opt_results) do opt_result
     title = only(collect(opt_result[1]))
     title = string(title[1], " = ", round(title[2], sigdigits = 3))
     plot(opt_result[2][2]; idxs = [threshold_observable], lab = "total infected", title)
-    hline!([1/3], lab = "limit")
+    hline!([1 / 3], lab = "limit")
 end
 plot(plts...)
 ```
@@ -412,8 +418,9 @@ r2 = eta + rho
 r3 = theta + mu + kappa
 r4 = nu + xi + tau1
 r5 = sigma + tau2
-R0 = (alpha + beta * epsilon / r2 + gamma * zeta / r3 + delta * ((eta * epsilon /
-(r2 * r4)) + (zeta * theta)/ (r3 * r4))) / r1
+R0 = (alpha + beta * epsilon / r2 + gamma * zeta / r3 +
+      delta * ((eta * epsilon /
+                (r2 * r4)) + (zeta * theta) / (r3 * r4))) / r1
 R_t = S * R0
 plot(solv, idxs = [R_t], lab = "R_t")
 @variables t cumulative_inf(t)
@@ -430,13 +437,12 @@ plot(solv3)
 A modeling decision required here is that we want to minimize the sum of
 normalized cumulative total infections and the change of intervention parameters
 `theta`, `epsilon`, and `phi`.
+
 ```@example scenario2
 intervention_parameters = [theta => (2 * defs_v2[epsilon], 3) # 𝜃 >= 2 * 𝜀
                            epsilon => (0, defs_v2[theta] / 2)
                            phi => (0, 1)]
-sol_cost = sol -> begin
-    sol(sol.t[end], idxs = cumulative_inf)
-end
+sol_cost = sol -> begin sol(sol.t[end], idxs = cumulative_inf) end
 opt_results = map(intervention_parameters) do (intervention_p, bounds)
     cost = intervention_p - defs_v2[intervention_p]
     optimal_parameter_intervention_for_reach(probv3,
@@ -450,6 +456,7 @@ map(first, opt_results)
 ```
 
 We can see that increasing the rate of vaccination is the most effective.
+
 ```@example scenario2
 plts = map(opt_results) do opt_result
     title = only(collect(opt_result[1]))
