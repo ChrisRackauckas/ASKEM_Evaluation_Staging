@@ -1,7 +1,7 @@
 name = "ASKEM_Evaluation_Staging"
 uuid = "d1df7db2-046b-4eac-b11d-ddc9c5f134b0"
 authors = ["JuliaHub"]
-version = "0.1.0"
+version = "1.1.0"
 
 [deps]
 
