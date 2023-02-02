@@ -56,7 +56,6 @@ dataset = solve(prob, saveat = 0.1)
 t_train = dataset.t[1:201]
 t_test = dataset.t[202:end]
 data_train = [S => dataset[S][1:201], I => dataset[I][1:201], R => dataset[R][1:201]]
-
 data_test = [S => dataset[S][202:end], I => dataset[I][202:end], R => dataset[R][202:end]]
 ```
 
@@ -88,7 +87,6 @@ This looks very good and matches the original data, confirming that the inverse 
 
 Now we train on data from June 1 2021 to September 30 2021.
 
-
 #### Application to Real Data from TA1
 
 ```@example evalscenario3
@@ -118,24 +116,82 @@ data_test = [S => N_total .- df_test.I .- df_test.R, I => df_test.I, R => df_tes
 u0s = [S => N_total - df_train.I[1] - df_train.R[1], I => df_train.I[1], R => df_train.R[1]]
 _prob = remake(prob, u0 = u0s, tspan = (t_train[1], t_train[end]), p = [N => N_total])
 
-fitparams = global_datafit(_prob, [inf => [0, 1.0], rec => [0.0, 1.0]], t_train, data_train)
+fitparams = global_datafit(_prob, [inf => [0, 1.0], rec => [0.0, 1.0]], t_train, data_train, maxiters = 1_000_000)
 ```
 
 ```@example evalscenario3
 # Plot training fit
 _prob_train = remake(_prob, p = fitparams)
 sol = solve(_prob_train, saveat = t_train);
+```
 
 plot(map(data_train) do (var, num)
     plot(sol, idxs = var)
     plot!(t_train, num)
 end..., dpi = 300)
 ```
+
 ```@example evalscenario3
 savefig("train_fit_S3_Q1.png")
 ```
 
+#### Why is that the best fit?
+
+At first glance it may look like the system was incorrect, i.e. that it did not find the global optima for this problem.
+However, upon further inspection we can show that this is truly the global optima. To see this, we have to inspect
+against the "intuitive" solution. The intuitive solution would be to simply place the peak of the infections at the
+right spot.
+
+```@example evalscenario3
+_prob_train = remake(_prob, p = [inf => 0.363, rec => 0.29])
+sol = solve(_prob_train, saveat = t_train);
+plot(sol, idxs = I)
+plot!(t_train, data_train[2][2], lab = "I_train")
+```
+
+However, if we check the L2 loss of this fit we will see it's a lot higher.
+
+```@example evalscenario3
+EasyModelAnalysis.l2loss([0.363, 0.29],(_prob, pkeys, t_train, data_train))
+```
+
+```@example evalscenario3
+EasyModelAnalysis.l2loss([fitparams[1][2],fitparams[2][2]],(_prob, pkeys, t_train, data_train))
+```
+
+The reason for this is because the fits of "making the infected maximum have the correct peak" forces the susceptible
+population to be far off. This then introduces a much larger total error.
+
+```@example evalscenario3
+_prob_train = remake(_prob, p = [inf => 0.363, rec => 0.29])
+sol = solve(_prob_train, saveat = t_train);
+plot(sol, idxs = S)
+plot!(t_train, data_train[1][2], lab = "S_train")
+```
+
+```@example evalscenario3
+_prob_train = remake(_prob, p = [inf => 0.363, rec => 0.29])
+sol = solve(_prob_train, saveat = t_train);
+plot(sol, idxs = R)
+plot!(t_train, data_train[2][2], lab = "R_train")
+```
+
+The reason that it is off is because the onset of this pandemic has a delay, i.e. it is flat for a bit before taking off.
+That cannot be the case for the SIR model. If `inf > rec`, then the onset of the pandemic is at time zero.
+
+This motivates fitting in terms of not the L2 norm but the relative L2 norm, i.e. with values weighted in terms of the 
+relative size of S. This would make the much larger values of S not dominate the overall loss due to the relative
+difference in units.
+
+```@example evalscenario3
+fitparams = global_datafit(_prob, [inf => [0, 1.0], rec => [0.0, 1.0]], t_train, data_train, 
+                           maxiters = 1_000_000, loss = EasyModelAnalysis.relative_l2loss)
+```
+
+which makes no substantial difference to the result.
+
 # Plot test fit
+
 ```@example evalscenario3
 # Plot testing fit
 u0s = [S => N_total - df_test.I[1] - df_test.R[1], I => df_test.I[1], R => df_test.R[1]]
