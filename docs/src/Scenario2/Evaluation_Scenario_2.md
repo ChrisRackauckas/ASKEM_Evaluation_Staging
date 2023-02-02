@@ -48,6 +48,19 @@ ps = [alpha, epsilon, gamma, beta, delta, mu, nu, lambda, rho, kappa, xi, sigma,
 defaultsmap = Dict(param => val for (param, val) in zip(parameters(sys), paramvals))
 ```
 
+```@example scenario2
+function LogNormalPrior(mean, variance)
+    μ = log(mean^2 / sqrt(mean^2 + variance))
+    σ = sqrt(log(1 + variance / mean^2))
+    LogNormal(μ, σ)
+end
+
+function create_priors(defaultsmap)
+    param_priors = [p => LogNormalPrior(defaultsmap[p], defaultsmap[p]*0.01) for p in keys(defaultsmap)]
+    return param_priors
+end
+```
+
 ### Unit Tests
 
 #### Unit Test 1
@@ -85,6 +98,25 @@ xmax, xmaxval = get_max_t(probne, sum(idart))
 @test isapprox(xmax, 47; atol = 0.5)
 @test isapprox(xmaxval, 0.6, atol = 0.01)
 ```
+
+```@example scenario2
+param_priors = create_priors(defaultsmap)
+
+_p = []
+for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
+    push!(_p, plot_uncertainty_forecast(probne, [Infected], 0.0:1:100.0, param_priors, 50))
+end
+plot(_p..., layout = (1, 5), size = (1600, 300), plot_title = "Infected with varying priors", legend = false)
+```
+
+```@example scenario2
+_p = []
+for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
+    push!(_p, plot_uncertainty_forecast(probne, [sum(idart)], 0.0:1:100.0, param_priors, 50))
+end
+plot(_p..., layout = (1, 5), size = (1600, 300), plot_title = "Infected with varying priors", legend = false)
+```
+
 
 #### Full Analysis of the Effect of Events
 
@@ -168,6 +200,14 @@ This test passes with SBML.jl
 
 This last test worked with the SBML script, but fails with the model from TA2. It seems inconsequential
 to the rest of the analysis.
+
+```@example scenario2
+param_priors = create_priors(Dict(pars))
+
+for obs in [Diagnosed, Infected, sum(idart)]
+    display(plot_uncertainty_forecast(probne, [obs], 0.0:1:100.0, param_priors, 50))
+end
+```
 
 ### Sensitivity Analysis
 

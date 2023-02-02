@@ -14,7 +14,7 @@ which we will use later.
 ```@example scenario1
 using EasyModelAnalysis, LinearAlgebra
 using EasyModelAnalysis.ModelingToolkit: toparam
-using EasyModelAnalysis.ModelingToolkit.Symbolics: FnType, variables
+using EasyModelAnalysis.ModelingToolkit.Symbolics: FnType, variable, variables
 using XLSX, CSV, DataFrames, Plots
 using Catlab, Catlab.CategoricalAlgebra, Catlab.Programs, AlgebraicPetri,
       AlgebraicPetri.TypedPetri
@@ -85,7 +85,27 @@ function scenario1(pops, mat; infectedfrac = nothing, numinfected = nothing)
     end
     P = map(splat(*), sir_strat[:, :rate])
     prob = ODEProblem(sys, U₀, (0, tf), P)
-    solve(prob)
+end
+```
+
+```@example scenario1
+function LogNormalPrior(mean, variance)
+    μ = log(mean^2 / sqrt(mean^2 + variance))
+    σ = sqrt(log(1 + variance / mean^2))
+    LogNormal(μ, σ)
+end
+
+function create_priors(prob, C_mean, var)
+    c_priors = []
+    params = parameters(prob.f.sys)
+    for (i,c) in enumerate(C_mean)
+        if C_mean[i] > 0
+            push!(c_priors, params[i] => LogNormalPrior(C_mean[i], var))
+        else
+            push!(c_priors, params[i] => Normal(C_mean[i], 0.0))
+        end
+    end
+    vcat(c_priors, [params[end] => LogNormalPrior(0.07, var)])
 end
 ```
 
@@ -102,8 +122,19 @@ end
 N.B.: Uniform `1/n_strata` is the default in our model creation function above.
 
 ```@example scenario1
-sol = scenario1([2k, 2k, 2k], fill(1 / 3, 3, 3), numinfected = 1)
+prob = scenario1([2k, 2k, 2k], fill(1/3, 3, 3), numinfected = 1)
+sol = solve(prob)
 plt_a1 = plot(sol, leg = :topright)
+```
+
+```@example scenario1
+_p = []
+for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
+    pltkwargs = i == 5 ? (;seriescolor = [:red :green :blue], label = ["Infected Young" "Infected Middle" "Infected Old"]) : (;seriescolor = [:red :green :blue])
+    param_priors = create_priors(prob, fill(1 / 3, (3, 3)), var)
+    push!(_p, plot_uncertainty_forecast_quantiles(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50; pltkwargs...))
+end
+plot(_p..., layout = (1, 5), size = (1600, 300), plot_title = "Infected with varying priors", legend = :outerright)
 ```
 
 > ii. Simulate this model for the case where there is significant in-group contact
@@ -123,8 +154,19 @@ contact_matrix = [0.4 0.05 0.1
 We now use this updated contact matrix to re-run the simulation.
 
 ```@example scenario1
-sol = scenario1([2k, 2k, 2k], contact_matrix, numinfected = 1)
+prob = scenario1([2k, 2k, 2k], contact_matrix, numinfected = 1)
+sol = solve(prob)
 plt_a2 = plot(sol, leg = :topright)
+```
+
+```@example scenario1
+_p = []
+for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
+    pltkwargs = i == 5 ? (;seriescolor = [:red :green :blue], label = ["Infected Young" "Infected Middle" "Infected Old"]) : (;seriescolor = [:red :green :blue])
+    param_priors = create_priors(prob, contact_matrix, var)
+    push!(_p, plot_uncertainty_forecast_quantiles(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50; pltkwargs...))
+end
+plot(_p..., layout = (1, 5), size = (1600, 300), plot_title = "Infected with varying priors", legend = :outerright)
 ```
 
 > iii. Simulate this model for the case where there is no contact between age groups.
@@ -132,8 +174,19 @@ plt_a2 = plot(sol, leg = :topright)
 > of no contact between age groups.
 
 ```@example scenario1
-sol = scenario1([2k, 2k, 2k], Diagonal(contact_matrix), numinfected = 1)
+prob = scenario1([2k, 2k, 2k], Diagonal(contact_matrix), numinfected = 1)
+sol = solve(prob)
 plt_a3 = plot(sol, leg = :topright)
+```
+
+```@example scenario1
+_p = []
+for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
+    pltkwargs = i == 5 ? (;seriescolor = [:red :green :blue], label = ["Infected Young" "Infected Middle" "Infected Old"]) : (;seriescolor = [:red :green :blue])
+    param_priors = create_priors(prob, Diagonal(contact_matrix), var)
+    push!(_p, plot_uncertainty_forecast_quantiles(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50; pltkwargs...))
+end
+plot(_p..., layout = (1, 5), size = (1600, 300), plot_title = "Infected with varying priors", legend = :outerright)
 ```
 
 > Simulate social distancing by scaling down the uniform contact matrix by a
@@ -141,8 +194,20 @@ plt_a3 = plot(sol, leg = :topright)
 
 ```@example scenario1
 uniform_matrix = fill(0.33, (3, 3))
-sol = scenario1([2k, 2k, 2k], 0.5 * uniform_matrix, numinfected = 1)
+prob = scenario1([2k, 2k, 2k], 0.5 * uniform_matrix, numinfected = 1)
+sol = solve(prob)
 plt_a4 = plot(sol, leg = :topright)
+```
+
+
+```@example scenario1
+_p = []
+for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
+    pltkwargs = i == 5 ? (;seriescolor = [:red :green :blue], label = ["Infected Young" "Infected Middle" "Infected Old"]) : (;seriescolor = [:red :green :blue])
+    param_priors = create_priors(prob, 0.5 .* (contact_matrix), var)
+    push!(_p, plot_uncertainty_forecast_quantiles(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50; pltkwargs...))
+end
+plot(_p..., layout = (1, 5), size = (1600, 300), plot_title = "Infected with varying priors", legend = :outerright)
 ```
 
 > Repeat 1.a.iv for the scenario where the young population has poor compliance
@@ -150,7 +215,7 @@ plt_a4 = plot(sol, leg = :topright)
 
 ```@example scenario1
 scaling = Diagonal([0.9, 0.8, 0.4])
-sol = scenario1([2k, 2k, 2k], scaling * uniform_matrix, numinfected = 1)
+sol = solve(scenario1([2k, 2k, 2k], scaling * uniform_matrix, numinfected = 1))
 plt_a5 = plot(sol, leg = :topright)
 ```
 
@@ -163,19 +228,19 @@ plot(plt_a1, plt_a2, plt_a3, plt_a4, plt_a5, size = (1000, 500))
 > Repeat 1.a for a younger-skewing population: `N_young = 3k, N_middle = 2k, N_old = 1k`
 
 ```@example scenario1
-sol = scenario1([3k, 2k, 1k], fill(1 / 3, 3, 3), numinfected = 1)
+sol = solve(scenario1([3k, 2k, 1k], fill(1/3, 3, 3), numinfected = 1))
 plt_b1 = plot(sol, leg = :topright, title = "i")
 
-sol = scenario1([3k, 2k, 1k], contact_matrix, numinfected = 1)
+sol = solve(scenario1([3k, 2k, 1k], contact_matrix, numinfected = 1))
 plt_b2 = plot(sol, leg = :topright, title = "ii")
 
-sol = scenario1([3k, 2k, 1k], Diagonal(contact_matrix), numinfected = 1)
+sol = solve(scenario1([3k, 2k, 1k], Diagonal(contact_matrix), numinfected = 1))
 plt_b3 = plot(sol, leg = :topright, title = "iii")
 
-sol = scenario1([3k, 2k, 1k], 0.5 * uniform_matrix, numinfected = 1)
+sol = solve(scenario1([3k, 2k, 1k], 0.5 * uniform_matrix, numinfected = 1))
 plt_b4 = plot(sol, leg = :topright, title = "iv")
 
-sol = scenario1([3k, 2k, 1k], scaling * uniform_matrix, numinfected = 1)
+sol = solve(scenario1([3k, 2k, 1k], scaling * uniform_matrix, numinfected = 1))
 plt_b5 = plot(sol, leg = :topright, title = "v")
 
 plot(plt_b1, plt_b2, plt_b3, plt_b4, plt_b5, size = (1000, 500))
@@ -184,19 +249,19 @@ plot(plt_b1, plt_b2, plt_b3, plt_b4, plt_b5, size = (1000, 500))
 > Repeat 1.a for an older-skewing population: `N_young = 1k, N_middle = 2k, N_old = 3k`
 
 ```@example scenario1
-sol = scenario1([1k, 2k, 3k], fill(1 / 3, 3, 3), numinfected = 1)
+sol = solve(scenario1([1k, 2k, 3k], fill(1/3, 3, 3), numinfected = 1))
 plt_c1 = plot(sol, leg = :topright, title = "i")
 
-sol = scenario1([1k, 2k, 3k], contact_matrix, numinfected = 1)
+sol = solve(scenario1([1k, 2k, 3k], contact_matrix, numinfected = 1))
 plt_c2 = plot(sol, leg = :topright, title = "ii")
 
-sol = scenario1([1k, 2k, 3k], Diagonal(contact_matrix), numinfected = 1)
+sol = solve(scenario1([1k, 2k, 3k], Diagonal(contact_matrix), numinfected = 1))
 plt_c3 = plot(sol, leg = :topright, title = "iii")
 
-sol = scenario1([1k, 2k, 3k], 0.5 * uniform_matrix, numinfected = 1)
+sol = solve(scenario1([1k, 2k, 3k], 0.5 * uniform_matrix, numinfected = 1))
 plt_c4 = plot(sol, leg = :topright, title = "iv")
 
-sol = scenario1([1k, 2k, 3k], scaling * uniform_matrix, numinfected = 1)
+sol = solve(scenario1([1k, 2k, 3k], scaling * uniform_matrix, numinfected = 1))
 plt_c5 = plot(sol, leg = :topright, title = "v")
 
 plot(plt_c1, plt_c2, plt_c3, plt_c4, plt_c5, size = (1000, 500))
@@ -223,7 +288,7 @@ a data set of the sum of these locations). The data values in these
 excel files are raw, averaged survey results.
 
 !!! note
-    
+
     We make no attempt to normalize or otherwise adjust the contact matrices. The interpretation of the contact matrices needs to be
     consistent with the SIR parameter `β`, which is fixed in our the
     given scenario. In a real world case, care would need to be taken
@@ -271,7 +336,7 @@ bar(1:length(pop_belg), collect(pop_belg), permute = (:x, :y),
 ```@example scenario1
 # Set up model
 # Per MITRE: Assume that the same fixed fraction of the population in each stratum is initially infected. Here: 0.01%
-sol = scenario1(pop_belg, cm_belg, infectedfrac = 0.0001)
+sol = solve(scenario1(pop_belg, cm_belg, infectedfrac = 0.0001))
 plot(sol, leg = :topright)
 ```
 
@@ -293,7 +358,7 @@ plot(hm, bar_india)
 ```
 
 ```@example scenario1
-sol = scenario1(pop_india, cm_india, infectedfrac = 0.0001)
+sol = solve(scenario1(pop_india, cm_india, infectedfrac = 0.0001))
 plot(sol, leg = :topright)
 ```
 
@@ -309,7 +374,7 @@ function cm_school(xfs, country)
 end # no school
 
 cm_belgium_school_closure = cm_school(xfs1, "Belgium")
-sol = scenario1(pop_belg, cm_belgium_school_closure, infectedfrac = 0.0001)
+sol = solve(scenario1(pop_belg, cm_belgium_school_closure, infectedfrac = 0.0001))
 plot(sol, leg = :topright)
 ```
 
@@ -324,6 +389,6 @@ function cm_social_dist(xfs, country)
 end
 
 cm_belgium_social_dist = cm_social_dist(xfs1, "Belgium")
-sol = scenario1(pop_belg, cm_belgium_social_dist, infectedfrac = 0.0001)
+sol = solve(scenario1(pop_belg, cm_belgium_social_dist, infectedfrac = 0.0001))
 plot(sol, leg = :topright)
 ```
