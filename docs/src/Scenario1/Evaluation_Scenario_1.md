@@ -215,7 +215,7 @@ plot(_p..., layout = (1, 5), size = (1600, 300), plot_title = "Infected with var
 
 ```@example scenario1
 scaling = Diagonal([0.9, 0.8, 0.4])
-sol = scenario1([2k, 2k, 2k], scaling * uniform_matrix, numinfected = 1)
+sol = solve(scenario1([2k, 2k, 2k], scaling * uniform_matrix, numinfected = 1))
 plt_a5 = plot(sol, leg = :topright)
 ```
 
@@ -228,19 +228,19 @@ plot(plt_a1, plt_a2, plt_a3, plt_a4, plt_a5, size = (1000, 500))
 > Repeat 1.a for a younger-skewing population: `N_young = 3k, N_middle = 2k, N_old = 1k`
 
 ```@example scenario1
-sol = scenario1([3k, 2k, 1k], fill(1 / 3, 3, 3), numinfected = 1)
+sol = solve(scenario1([3k, 2k, 1k], fill(1/3, 3, 3), numinfected = 1))
 plt_b1 = plot(sol, leg = :topright, title = "i")
 
-sol = scenario1([3k, 2k, 1k], contact_matrix, numinfected = 1)
+sol = solve(scenario1([3k, 2k, 1k], contact_matrix, numinfected = 1))
 plt_b2 = plot(sol, leg = :topright, title = "ii")
 
-sol = scenario1([3k, 2k, 1k], Diagonal(contact_matrix), numinfected = 1)
+sol = solve(scenario1([3k, 2k, 1k], Diagonal(contact_matrix), numinfected = 1))
 plt_b3 = plot(sol, leg = :topright, title = "iii")
 
-sol = scenario1([3k, 2k, 1k], 0.5 * uniform_matrix, numinfected = 1)
+sol = solve(scenario1([3k, 2k, 1k], 0.5 * uniform_matrix, numinfected = 1))
 plt_b4 = plot(sol, leg = :topright, title = "iv")
 
-sol = scenario1([3k, 2k, 1k], scaling * uniform_matrix, numinfected = 1)
+sol = solve(scenario1([3k, 2k, 1k], scaling * uniform_matrix, numinfected = 1))
 plt_b5 = plot(sol, leg = :topright, title = "v")
 
 plot(plt_b1, plt_b2, plt_b3, plt_b4, plt_b5, size = (1000, 500))
@@ -249,19 +249,19 @@ plot(plt_b1, plt_b2, plt_b3, plt_b4, plt_b5, size = (1000, 500))
 > Repeat 1.a for an older-skewing population: `N_young = 1k, N_middle = 2k, N_old = 3k`
 
 ```@example scenario1
-sol = scenario1([1k, 2k, 3k], fill(1 / 3, 3, 3), numinfected = 1)
+sol = solve(scenario1([1k, 2k, 3k], fill(1/3, 3, 3), numinfected = 1))
 plt_c1 = plot(sol, leg = :topright, title = "i")
 
-sol = scenario1([1k, 2k, 3k], contact_matrix, numinfected = 1)
+sol = solve(scenario1([1k, 2k, 3k], contact_matrix, numinfected = 1))
 plt_c2 = plot(sol, leg = :topright, title = "ii")
 
-sol = scenario1([1k, 2k, 3k], Diagonal(contact_matrix), numinfected = 1)
+sol = solve(scenario1([1k, 2k, 3k], Diagonal(contact_matrix), numinfected = 1))
 plt_c3 = plot(sol, leg = :topright, title = "iii")
 
-sol = scenario1([1k, 2k, 3k], 0.5 * uniform_matrix, numinfected = 1)
+sol = solve(scenario1([1k, 2k, 3k], 0.5 * uniform_matrix, numinfected = 1))
 plt_c4 = plot(sol, leg = :topright, title = "iv")
 
-sol = scenario1([1k, 2k, 3k], scaling * uniform_matrix, numinfected = 1)
+sol = solve(scenario1([1k, 2k, 3k], scaling * uniform_matrix, numinfected = 1))
 plt_c5 = plot(sol, leg = :topright, title = "v")
 
 plot(plt_c1, plt_c2, plt_c3, plt_c4, plt_c5, size = (1000, 500))
@@ -336,7 +336,7 @@ bar(1:length(pop_belg), collect(pop_belg), permute = (:x, :y),
 ```@example scenario1
 # Set up model
 # Per MITRE: Assume that the same fixed fraction of the population in each stratum is initially infected. Here: 0.01%
-sol = scenario1(pop_belg, cm_belg, infectedfrac = 0.0001)
+sol = solve(scenario1(pop_belg, cm_belg, infectedfrac = 0.0001))
 plot(sol, leg = :topright)
 ```
 
@@ -358,7 +358,7 @@ plot(hm, bar_india)
 ```
 
 ```@example scenario1
-sol = scenario1(pop_india, cm_india, infectedfrac = 0.0001)
+sol = solve(scenario1(pop_india, cm_india, infectedfrac = 0.0001))
 plot(sol, leg = :topright)
 ```
 
@@ -374,7 +374,7 @@ function cm_school(xfs, country)
 end # no school
 
 cm_belgium_school_closure = cm_school(xfs1, "Belgium")
-sol = scenario1(pop_belg, cm_belgium_school_closure, infectedfrac = 0.0001)
+sol = solve(scenario1(pop_belg, cm_belgium_school_closure, infectedfrac = 0.0001))
 plot(sol, leg = :topright)
 ```
 
@@ -389,6 +389,6 @@ function cm_social_dist(xfs, country)
 end
 
 cm_belgium_social_dist = cm_social_dist(xfs1, "Belgium")
-sol = scenario1(pop_belg, cm_belgium_social_dist, infectedfrac = 0.0001)
+sol = solve(scenario1(pop_belg, cm_belgium_social_dist, infectedfrac = 0.0001))
 plot(sol, leg = :topright)
 ```
