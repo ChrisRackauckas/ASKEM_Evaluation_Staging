@@ -293,20 +293,27 @@ AlgebraicPetri.Graph(dom(hom(negate(sidarthe_sub))))
 ```@example scenario2
 sysv = ODESystem(sidarthe_v)
 u0valsv = [u0vals; 0.0]  # 0 vaccinated initially
-paramvalsv = [paramvals; 0.0025; defaultsmap[tau] /3]  # add phi and tau1
-defaultsmapv = Dict(Num(param) => val for (param, val) in zip(parameters(sysv), paramvalsv))
 @unpack beta, gamma, delta, alpha, epsilon, kappa, sigma, rho, xi, mu, tau1, tau2, lambda, eta, nu, zeta, theta, vax = sysv
-phi = vax;
+phi = vax
+p_map = Dict([parameters(sys) .=> paramvals
+         tau2 => defaultsmap[tau]
+         tau1 => defaultsmap[tau] / 3
+         vax => 0.0])
+sts_map = Dict(states(sysv) .=> u0valsv)
+using ModelingToolkit: @set!
+defs_v2 = merge(sts_map, p_map)
+@set! sysv.defaults = defs_v2
+sysv = complete(sysv)
 ```
 
 ```@example scenario2
-probv = ODEProblem(sysv, u0valsv, (0, 100), paramvalsv)
+probv = ODEProblem(sysv, [], (0, 100))
 solv = solve(probv, Tsit5())
 plot(solv)
 ```
 
 ```@example scenario2
-plot(solv, idxs = [og_states; @nonamespace(sysv.V)])
+plot(solv, idxs = [og_states; sysv.V])
 ```
 
 ```@example scenario2
@@ -317,11 +324,11 @@ plot(solt1; idxs = sum(idart))
 xmax, xmaxval = get_max_t(probv, sum(idart) * ITALY_POPULATION)
 xmax, xmaxval = get_max_t(probv, sum(idart))
 
-@test isapprox(xmax, 47; atol = 5)
+@test isapprox(xmax, 47; atol = 1)
 ```
 
 ```@example scenario2
-@test_broken isapprox(xmaxval, 0.6; atol = 0.1)
+@test isapprox(xmaxval, 0.6; atol = 0.1)
 ```
 
 This test passed with the original SBML model but failed with the model from the TA2 integration.
@@ -348,7 +355,7 @@ This example revealed a typo in our function (https://github.com/SciML/EasyModel
 ```@example scenario2
 threshold_observable = (Infected + Diagnosed + Ailing + Recognized + Threatened) /
                        sum(states(sysv))
-plot(solv2, idxs = [threshold_observable], lab = "total infected")
+plot(solv, idxs = [threshold_observable], lab = "total infected")
 hline!([1 / 3], lab = "limit")
 ```
 
@@ -359,14 +366,14 @@ intervention_parameters = [theta => (2 * defs_v2[epsilon], 1) # 𝜃 >= 2 * 𝜀
 
 opt_results = map(intervention_parameters) do (intervention_p, bounds)
     cost = intervention_p - defs_v2[intervention_p]
-    opt_p, solv2_s, ret = optimal_parameter_intervention_for_threshold(probv2,
-                                                                       threshold_observable,
-                                                                       0.33,
-                                                                       cost,
-                                                                       [intervention_p], [0.0],
-                                                                       [1.0],
-                                                                       (30.0, 100.0);
-                                                                       maxtime = 10);
+    optimal_parameter_intervention_for_threshold(probv,
+                                                 threshold_observable,
+                                                 0.33,
+                                                 cost,
+                                                 [intervention_p], [0.0],
+                                                 [1.0],
+                                                 (30.0, 100.0);
+                                                 maxtime = 10);
 end;
 map(first, opt_results)
 ```
@@ -399,16 +406,16 @@ A modeling decision required here was the definition of intervention parameters,
 which we decided to use the same parameters as b.i.
 
 ```@example scenario2
-@unpack alpha, beta, zeta, epsilon, eta, xi, lambda, rho, theta, mu, kappa, tau, sigma, S, I, D, A, R, T = sysv;
+@unpack S, I, D, A, R, T = sysv
 r1 = epsilon + xi + lambda
 r2 = eta + rho
 r3 = theta + mu + kappa
-r4 = nu + xi + tau
-r5 = sigma + tau
+r4 = nu + xi + tau1
+r5 = sigma + tau2
 R0 = (alpha + beta * epsilon / r2 + gamma * zeta / r3 + delta * ((eta * epsilon /
 (r2 * r4)) + (zeta * theta)/ (r3 * r4))) / r1
 R_t = S * R0
-plot(solv2, idxs = [R_t], lab = "R_t")
+plot(solv, idxs = [R_t], lab = "R_t")
 @variables t cumulative_inf(t)
 total_inf = (I + D + A + R + T) / sum(states(sysv))
 sysva = add_accumulations(sysv, [cumulative_inf => total_inf])
