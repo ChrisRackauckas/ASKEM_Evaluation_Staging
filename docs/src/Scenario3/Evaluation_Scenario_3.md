@@ -128,8 +128,8 @@ sol = solve(_prob_train, saveat = t_train);
 
 ```@example evalscenario3
 plot(map(data_train) do (var, num)
-plot(sol, idxs = var)
-plot!(t_train, num)
+    plot(sol, idxs = var)
+    plot!(t_train, num)
 end..., dpi = 300)
 ```
 
@@ -154,6 +154,7 @@ plot!(t_train, data_train[2][2], lab = "I_train")
 However, if we check the L2 loss of this fit we will see it's a lot higher.
 
 ```@example evalscenario3
+pkeys = [inf, rec]
 EasyModelAnalysis.l2loss([0.363, 0.29], (_prob, pkeys, t_train, data_train))
 ```
 
@@ -206,6 +207,11 @@ EasyModelAnalysis.relative_l2loss([fitparams[1][2], fitparams[2][2]],
 In other words, while one may wish to fit the infected spike, doing so would cause the susceptible and recovered values
 to be so far off that it leads to more error than a bad fit of the infected. The SIR model is simply not a good fit
 to this data.
+
+Another way to see this result is to notice that both the number of susceptible individuals and recovered individuals
+are both dropping exponentially at a growing rate at the end of the time after the peak of the infection, which is 
+incompatible with the SIR model's assumptions that the rate of S -> I and I -> R would both drop after the infection's 
+peak.
 
 ### SIR Forecasting Plots
 
@@ -324,6 +330,15 @@ plot(map(data_test) do (var, num)
 savefig("test_fit_S3_Q2.png")
 ```
 
+#### Explanation of the Fit
+
+Once again it's clear that the model is unable to fit the data well. The same issues apply to the new data as well.
+The S, R, and D data all increase the rate of growth after the infection's peak, which is impossible to occur in
+the SIRHD model and thus suggests that the infection peak might be an anomoly of the data. In either case, it's
+impossible to both fit the non-decreasing derivatives of these 3 data series while also fitting the peak of the
+infection, with this model. Additionally. for no parameters does the SIRHD model emit oscillatory solutions as seen 
+in the data, which suggests a model deficiency.
+
 ### Evaluate Model Forecasts
 
 In order to evaluate the model forecasts, we developed a functional which does the forecasting part with multiple models
@@ -342,6 +357,10 @@ norm(solve(_prob2, saveat = t_test)[R] - data_test[3][2]) +
 norm(solve(_prob2, saveat = t_test)[H] - data_test[4][2]) +
 norm(solve(_prob2, saveat = t_test)[D] - data_test[5][2])
 ```
+
+Overall the SIRHD model gives a better forecast. Though for no values of the model can an SIR or SIRHD model predict
+a second wave, all of these models can only have a singular peak in the infections, and thus we would say that neither
+of the models are adequate predictors of this data.
 
 ## Question 3: Add Vaccinations
 
