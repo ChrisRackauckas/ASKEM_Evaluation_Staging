@@ -6,12 +6,10 @@
 </script><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script><link href="../../assets/favicon.ico" rel="icon" type="image/x-icon"/></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img src="../../assets/logo.png" alt="DARPA-ASKEM Evaluation logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">DARPA-ASKEM Evaluation</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">DARPA-ASKEM Evaluation</a></li><li><a class="tocitem" href="../../Scenario1/Evaluation_Scenario_1/">Evaluation Scenario 1</a></li><li><a class="tocitem" href="../../Scenario2/Evaluation_Scenario_2/">Evaluation Scenario 2</a></li><li class="is-active"><a class="tocitem" href>Scenario 3 - Model Formation</a><ul class="internal"><li><a class="tocitem" href="#.1-Base-SIR-model"><span>3.1 Base SIR model</span></a></li><li><a class="tocitem" href="#.2-Hospitalization-and-death"><span>3.2 Hospitalization and death</span></a></li><li><a class="tocitem" href="#.3-Vaccination"><span>3.3 Vaccination</span></a></li><li><a class="tocitem" href="#.4-Age-stratification"><span>3.4 Age stratification</span></a></li><li><a class="tocitem" href="#Bonus:-Testing-of-infectives"><span>Bonus: Testing of infectives</span></a></li></ul></li><li><a class="tocitem" href="../../Scenario3/Evaluation_Scenario_3/">Evaluation Scenario 3</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li class="is-active"><a href>Scenario 3 - Model Formation</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Scenario 3 - Model Formation</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/ChrisRackauckas/ASKEM_Evaluation_Staging/blob/main/docs/src/Scenario3_prep/scenario3.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Scenario-3-Model-Formation"><a class="docs-heading-anchor" href="#Scenario-3-Model-Formation">Scenario 3 - Model Formation</a><a id="Scenario-3-Model-Formation-1"></a><a class="docs-heading-anchor-permalink" href="#Scenario-3-Model-Formation" title="Permalink"></a></h1><h2 id=".1-Base-SIR-model"><a class="docs-heading-anchor" href="#.1-Base-SIR-model">3.1 Base SIR model</a><a id=".1-Base-SIR-model-1"></a><a class="docs-heading-anchor-permalink" href="#.1-Base-SIR-model" title="Permalink"></a></h2><pre><code class="language-julia hljs">using AlgebraicPetri, AlgebraicPetri.TypedPetri
 using Catlab.CategoricalAlgebra, Catlab.WiringDiagrams
 
-const infectious_ontology = LabelledPetriNet(
-  [:Pop],
-  :infect=&gt;((:Pop, :Pop)=&gt;(:Pop, :Pop)),
-  :disease=&gt;(:Pop=&gt;:Pop),
-  :strata=&gt;(:Pop=&gt;:Pop)
-)
+const infectious_ontology = LabelledPetriNet([:Pop],
+                                             :infect =&gt; ((:Pop, :Pop) =&gt; (:Pop, :Pop)),
+                                             :disease =&gt; (:Pop =&gt; :Pop),
+                                             :strata =&gt; (:Pop =&gt; :Pop))
 
 Graph(infectious_ontology)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
@@ -94,12 +92,12 @@ Graph(infectious_ontology)</code></pre><img src='data:image/svg+xml;utf-8,<?xml 
 </svg>
 '/><pre><code class="language-julia hljs">using Catlab.Programs, Catlab.Graphics
 
-sir_uwd = @relation (S,I,R) where (S::Pop, I::Pop, R::Pop) begin
-  infect(S,I,I,I) # inf
-  disease(I,R) # rec
+sir_uwd = @relation (S, I, R) where {(S::Pop, I::Pop, R::Pop)} begin
+    infect(S, I, I, I) # inf
+    disease(I, R) # rec
 end
 
-to_graphviz(sir_uwd, box_labels=:name, junction_labels=:variable)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+to_graphviz(sir_uwd, box_labels = :name, junction_labels = :variable)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.50.0 (20211204.2007)
@@ -274,14 +272,14 @@ Graph(dom(typed_sir))</code></pre><img src='data:image/svg+xml;utf-8,<?xml versi
 </g>
 </g>
 </svg>
-'/><h2 id=".2-Hospitalization-and-death"><a class="docs-heading-anchor" href="#.2-Hospitalization-and-death">3.2 Hospitalization and death</a><a id=".2-Hospitalization-and-death-1"></a><a class="docs-heading-anchor-permalink" href="#.2-Hospitalization-and-death" title="Permalink"></a></h2><h3 id="SIRD"><a class="docs-heading-anchor" href="#SIRD">SIRD</a><a id="SIRD-1"></a><a class="docs-heading-anchor-permalink" href="#SIRD" title="Permalink"></a></h3><p>SIR model with death</p><pre><code class="language-julia hljs">with_death_uwd = @relation (S,I,R,D) where (S::Pop, I::Pop, R::Pop, D::Pop) begin
-  base(S,I,R)
-  disease(I,D) # die
+'/><h2 id=".2-Hospitalization-and-death"><a class="docs-heading-anchor" href="#.2-Hospitalization-and-death">3.2 Hospitalization and death</a><a id=".2-Hospitalization-and-death-1"></a><a class="docs-heading-anchor-permalink" href="#.2-Hospitalization-and-death" title="Permalink"></a></h2><h3 id="SIRD"><a class="docs-heading-anchor" href="#SIRD">SIRD</a><a id="SIRD-1"></a><a class="docs-heading-anchor-permalink" href="#SIRD" title="Permalink"></a></h3><p>SIR model with death</p><pre><code class="language-julia hljs">with_death_uwd = @relation (S, I, R, D) where {(S::Pop, I::Pop, R::Pop, D::Pop)} begin
+    base(S, I, R)
+    disease(I, D) # die
 end
 
 sird_uwd = ocompose(with_death_uwd, 1, sir_uwd)
 
-to_graphviz(sird_uwd, box_labels=:name, junction_labels=:variable)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+to_graphviz(sird_uwd, box_labels = :name, junction_labels = :variable)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.50.0 (20211204.2007)
@@ -510,15 +508,15 @@ Graph(dom(typed_sird))</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
 </g>
 </g>
 </svg>
-'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sird), &quot;scenario3_sird.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">257</code></pre><h3 id="SIRH"><a class="docs-heading-anchor" href="#SIRH">SIRH</a><a id="SIRH-1"></a><a class="docs-heading-anchor-permalink" href="#SIRH" title="Permalink"></a></h3><p>SIR model with hospitalization</p><pre><code class="language-julia hljs">with_hospital_uwd = @relation (S,I,R,H) where (S::Pop, I::Pop, R::Pop, H::Pop) begin
-  base(S,I,R)
-  disease(I,H) # hosp
-  disease(H,R) # hosp_rec
+'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sird), &quot;scenario3_sird.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">257</code></pre><h3 id="SIRH"><a class="docs-heading-anchor" href="#SIRH">SIRH</a><a id="SIRH-1"></a><a class="docs-heading-anchor-permalink" href="#SIRH" title="Permalink"></a></h3><p>SIR model with hospitalization</p><pre><code class="language-julia hljs">with_hospital_uwd = @relation (S, I, R, H) where {(S::Pop, I::Pop, R::Pop, H::Pop)} begin
+    base(S, I, R)
+    disease(I, H) # hosp
+    disease(H, R) # hosp_rec
 end
 
 sirh_uwd = ocompose(with_hospital_uwd, 1, sir_uwd)
 
-to_graphviz(sirh_uwd, box_labels=:name, junction_labels=:variable)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+to_graphviz(sirh_uwd, box_labels = :name, junction_labels = :variable)</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.50.0 (20211204.2007)
@@ -658,7 +656,7 @@ to_graphviz(sirh_uwd, box_labels=:name, junction_labels=:variable)</code></pre><
 </g>
 </svg>
 '/><pre><code class="language-julia hljs">typed_sirh = oapply_typed(infectious_ontology, sirh_uwd,
-  [base_names; [:hosp, :hosp_rec]])
+                          [base_names; [:hosp, :hosp_rec]])
 
 Graph(dom(typed_sirh))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
@@ -784,16 +782,17 @@ Graph(dom(typed_sirh))</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
 </g>
 </g>
 </svg>
-'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sirh), &quot;scenario3_sirh.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">311</code></pre><h3 id="SIRHD"><a class="docs-heading-anchor" href="#SIRHD">SIRHD</a><a id="SIRHD-1"></a><a class="docs-heading-anchor-permalink" href="#SIRHD" title="Permalink"></a></h3><p>SIR model with both hospitalization and death</p><pre><code class="language-julia hljs">with_hospital_death_uwd = @relation (S,I,R,H,D) where (S::Pop, I::Pop, R::Pop, H::Pop, D::Pop) begin
-  base(S,I,R,H)
-  disease(I,D) # die
-  disease(H,D) # hosp_die
+'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sirh), &quot;scenario3_sirh.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">311</code></pre><h3 id="SIRHD"><a class="docs-heading-anchor" href="#SIRHD">SIRHD</a><a id="SIRHD-1"></a><a class="docs-heading-anchor-permalink" href="#SIRHD" title="Permalink"></a></h3><p>SIR model with both hospitalization and death</p><pre><code class="language-julia hljs">with_hospital_death_uwd = @relation (S, I, R, H,
+                                     D) where {(S::Pop, I::Pop, R::Pop, H::Pop, D::Pop)} begin
+    base(S, I, R, H)
+    disease(I, D) # die
+    disease(H, D) # hosp_die
 end
 
 sirhd_uwd = ocompose(with_hospital_death_uwd, 1, sirh_uwd)
 
-to_graphviz(sirhd_uwd, box_labels=:name, junction_labels=:variable,
-  edge_attrs=Dict(:len =&gt; &quot;0.75&quot;))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+to_graphviz(sirhd_uwd, box_labels = :name, junction_labels = :variable,
+            edge_attrs = Dict(:len =&gt; &quot;0.75&quot;))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.50.0 (20211204.2007)
@@ -978,7 +977,7 @@ to_graphviz(sirhd_uwd, box_labels=:name, junction_labels=:variable,
 </g>
 </svg>
 '/><pre><code class="language-julia hljs">typed_sirhd = oapply_typed(infectious_ontology, sirhd_uwd,
-  [base_names; [:hosp, :hosp_rec, :die, :hosp_die]])
+                           [base_names; [:hosp, :hosp_rec, :die, :hosp_die]])
 
 Graph(dom(typed_sirhd))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
@@ -1150,19 +1149,19 @@ Graph(dom(typed_sirhd))</code></pre><img src='data:image/svg+xml;utf-8,<?xml ver
 </g>
 </g>
 </svg>
-'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sirhd), &quot;scenario3_sirhd.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">426</code></pre><h2 id=".3-Vaccination"><a class="docs-heading-anchor" href="#.3-Vaccination">3.3 Vaccination</a><a id=".3-Vaccination-1"></a><a class="docs-heading-anchor-permalink" href="#.3-Vaccination" title="Permalink"></a></h2><p>SIRHD model with vaccination.</p><pre><code class="language-julia hljs">vaccination_uwd = @relation () where (U::Pop, V::Pop) begin
-  strata(U,V) # vac
-  infect(U,U,U,U)
-  infect(U,V,U,V)
-  infect(V,U,V,U)
-  infect(V,V,V,V)
+'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sirhd), &quot;scenario3_sirhd.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">426</code></pre><h2 id=".3-Vaccination"><a class="docs-heading-anchor" href="#.3-Vaccination">3.3 Vaccination</a><a id=".3-Vaccination-1"></a><a class="docs-heading-anchor-permalink" href="#.3-Vaccination" title="Permalink"></a></h2><p>SIRHD model with vaccination.</p><pre><code class="language-julia hljs">vaccination_uwd = @relation () where {(U::Pop, V::Pop)} begin
+    strata(U, V) # vac
+    infect(U, U, U, U)
+    infect(U, V, U, V)
+    infect(V, U, V, U)
+    infect(V, V, V, V)
 end
 
 typed_vaccination = oapply_typed(infectious_ontology, vaccination_uwd,
-  [:vac, :UU, :UV, :VU, :VV])
+                                 [:vac, :UU, :UV, :VU, :VV])
 
-to_graphviz(vaccination_uwd, box_labels=:name, junction_labels=:variable,
-  edge_attrs=Dict(:len =&gt; &quot;1&quot;), graph_attrs=Dict(:start =&gt; &quot;2&quot;))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+to_graphviz(vaccination_uwd, box_labels = :name, junction_labels = :variable,
+            edge_attrs = Dict(:len =&gt; &quot;1&quot;), graph_attrs = Dict(:start =&gt; &quot;2&quot;))</code></pre><img src='data:image/svg+xml;utf-8,<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <!-- Generated by graphviz version 2.50.0 (20211204.2007)
@@ -1309,14 +1308,12 @@ to_graphviz(vaccination_uwd, box_labels=:name, junction_labels=:variable,
 </g>
 </g>
 </svg>
-'/><pre><code class="language-julia hljs">typed_sirhd_aug = add_reflexives(
-  typed_sirhd, [[:strata],[],[],[],[]], infectious_ontology)
+'/><pre><code class="language-julia hljs">typed_sirhd_aug = add_reflexives(typed_sirhd, [[:strata], [], [], [], []],
+                                 infectious_ontology)
 
-typed_vaccination_aug = add_reflexives(
-  typed_vaccination,
-  [[:disease], [:disease]],
-  infectious_ontology
-)
+typed_vaccination_aug = add_reflexives(typed_vaccination,
+                                       [[:disease], [:disease]],
+                                       infectious_ontology)
 
 typed_sirhd_vac = typed_product(typed_sirhd_aug, typed_vaccination_aug)
 
@@ -1736,29 +1733,27 @@ Graph(dom(typed_sirhd_vac))</code></pre><img src='data:image/svg+xml;utf-8,<?xml
 </g>
 </svg>
 '/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sirhd_vac), &quot;scenario3_sirhd_vac.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1268</code></pre><h2 id=".4-Age-stratification"><a class="docs-heading-anchor" href="#.4-Age-stratification">3.4 Age stratification</a><a id=".4-Age-stratification-1"></a><a class="docs-heading-anchor-permalink" href="#.4-Age-stratification" title="Permalink"></a></h2><p>SIRHD model with vaccination <em>and</em> age stratification.</p><pre><code class="language-julia hljs">for n in (2, 8)
-  names = [Symbol(&quot;Age$i&quot;) for i in 1:n]
-  typed_age = pairwise_id_typed_petri(infectious_ontology, :Pop, :infect, names)
+    names = [Symbol(&quot;Age$i&quot;) for i in 1:n]
+    typed_age = pairwise_id_typed_petri(infectious_ontology, :Pop, :infect, names)
 
-  typed_age_aug = add_reflexives(
-    typed_age,
-    repeat([[:disease, :strata]], n),
-    infectious_ontology
-  )
+    typed_age_aug = add_reflexives(typed_age,
+                                   repeat([[:disease, :strata]], n),
+                                   infectious_ontology)
 
-  typed_sirhd_vac_age = typed_product(typed_sirhd_vac, typed_age_aug)
-  net = dom(typed_sirhd_vac_age)
+    typed_sirhd_vac_age = typed_product(typed_sirhd_vac, typed_age_aug)
+    net = dom(typed_sirhd_vac_age)
 
-  write_json_acset(net, &quot;scenario3_sirhd_vac_age$n.json&quot;)
+    write_json_acset(net, &quot;scenario3_sirhd_vac_age$n.json&quot;)
 
-  open(&quot;scenario3_sirhd_vac_age$n.svg&quot;, &quot;w&quot;) do io
-    show(io, MIME(&quot;image/svg+xml&quot;), Graph(net))
-  end
-end</code></pre><h2 id="Bonus:-Testing-of-infectives"><a class="docs-heading-anchor" href="#Bonus:-Testing-of-infectives">Bonus: Testing of infectives</a><a id="Bonus:-Testing-of-infectives-1"></a><a class="docs-heading-anchor-permalink" href="#Bonus:-Testing-of-infectives" title="Permalink"></a></h2><h3 id="SIRT"><a class="docs-heading-anchor" href="#SIRT">SIRT</a><a id="SIRT-1"></a><a class="docs-heading-anchor-permalink" href="#SIRT" title="Permalink"></a></h3><p>SIR model with tested and untested infectives</p><pre><code class="language-julia hljs">sirt_uwd = @relation (S,Iᵤ,Iₜ,R) where (S::Pop, Iᵤ::Pop, Iₜ::Pop, R::Pop) begin
-  infect(S,Iᵤ,Iᵤ,Iᵤ) # infᵤ
-  infect(S,Iₜ,Iᵤ,Iₜ) # infₜ
-  disease(Iᵤ,R) # recᵤ
-  disease(Iₜ,R) # recₜ
-  disease(Iᵤ,Iₜ) # test
+    open(&quot;scenario3_sirhd_vac_age$n.svg&quot;, &quot;w&quot;) do io
+        show(io, MIME(&quot;image/svg+xml&quot;), Graph(net))
+    end
+end</code></pre><h2 id="Bonus:-Testing-of-infectives"><a class="docs-heading-anchor" href="#Bonus:-Testing-of-infectives">Bonus: Testing of infectives</a><a id="Bonus:-Testing-of-infectives-1"></a><a class="docs-heading-anchor-permalink" href="#Bonus:-Testing-of-infectives" title="Permalink"></a></h2><h3 id="SIRT"><a class="docs-heading-anchor" href="#SIRT">SIRT</a><a id="SIRT-1"></a><a class="docs-heading-anchor-permalink" href="#SIRT" title="Permalink"></a></h3><p>SIR model with tested and untested infectives</p><pre><code class="language-julia hljs">sirt_uwd = @relation (S, Iᵤ, Iₜ, R) where {(S::Pop, Iᵤ::Pop, Iₜ::Pop, R::Pop)} begin
+    infect(S, Iᵤ, Iᵤ, Iᵤ) # infᵤ
+    infect(S, Iₜ, Iᵤ, Iₜ) # infₜ
+    disease(Iᵤ, R) # recᵤ
+    disease(Iₜ, R) # recₜ
+    disease(Iᵤ, Iₜ) # test
 end
 
 sirt_names = [:infᵤ, :infₜ, :recᵤ, :recₜ, :test]
@@ -1922,8 +1917,7 @@ Graph(dom(typed_sirt))</code></pre><img src='data:image/svg+xml;utf-8,<?xml vers
 </g>
 </g>
 </svg>
-'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sirt), &quot;scenario3_sirt.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">404</code></pre><h3 id="Testing-and-vaccination"><a class="docs-heading-anchor" href="#Testing-and-vaccination">Testing and vaccination</a><a id="Testing-and-vaccination-1"></a><a class="docs-heading-anchor-permalink" href="#Testing-and-vaccination" title="Permalink"></a></h3><p>Add vaccination to this model using stratification.</p><pre><code class="language-julia hljs">typed_sirt_aug = add_reflexives(
-  typed_sirt, [[:strata],[],[],[]], infectious_ontology)
+'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sirt), &quot;scenario3_sirt.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">404</code></pre><h3 id="Testing-and-vaccination"><a class="docs-heading-anchor" href="#Testing-and-vaccination">Testing and vaccination</a><a id="Testing-and-vaccination-1"></a><a class="docs-heading-anchor-permalink" href="#Testing-and-vaccination" title="Permalink"></a></h3><p>Add vaccination to this model using stratification.</p><pre><code class="language-julia hljs">typed_sirt_aug = add_reflexives(typed_sirt, [[:strata], [], [], []], infectious_ontology)
 
 typed_sirt_vac = typed_product(typed_sirt_aug, typed_vaccination_aug)
 
@@ -2386,4 +2380,4 @@ Graph(dom(typed_sirt_vac))</code></pre><img src='data:image/svg+xml;utf-8,<?xml 
 </g>
 </g>
 </svg>
-'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sirt_vac), &quot;scenario3_sirt_vac.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1362</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../Scenario2/Evaluation_Scenario_2/">« Evaluation Scenario 2</a><a class="docs-footer-nextpage" href="../../Scenario3/Evaluation_Scenario_3/">Evaluation Scenario 3 »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 2 February 2023 10:06">Thursday 2 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+'/><pre><code class="language-julia hljs">write_json_acset(dom(typed_sirt_vac), &quot;scenario3_sirt_vac.json&quot;)</code></pre><pre class="documenter-example-output"><code class="nohighlight hljs ansi">1362</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../Scenario2/Evaluation_Scenario_2/">« Evaluation Scenario 2</a><a class="docs-footer-nextpage" href="../../Scenario3/Evaluation_Scenario_3/">Evaluation Scenario 3 »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.24 on <span class="colophon-date" title="Thursday 2 February 2023 10:08">Thursday 2 February 2023</span>. Using Julia version 1.8.5.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
