@@ -126,11 +126,11 @@ _prob_train = remake(_prob, p = fitparams)
 sol = solve(_prob_train, saveat = t_train);
 ```
 
+```@example evalscenario3
 plot(map(data_train) do (var, num)
 plot(sol, idxs = var)
 plot!(t_train, num)
 end..., dpi = 300)
-
 ```
 
 ```@example evalscenario3
