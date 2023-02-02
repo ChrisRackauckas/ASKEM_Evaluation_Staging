@@ -124,7 +124,7 @@ N.B.: Uniform `1/n_strata` is the default in our model creation function above.
 ```@example scenario1
 prob = scenario1([2k, 2k, 2k], fill(1/3, 3, 3), numinfected = 1)
 sol = solve(prob)
-plot(sol, leg = :topright)
+plt_a1 = plot(sol, leg = :topright)
 ```
 
 ```@example scenario1
