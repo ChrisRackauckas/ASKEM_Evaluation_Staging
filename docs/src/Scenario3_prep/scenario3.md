@@ -2,33 +2,28 @@
 
 ## 3.1 Base SIR model
 
-
 ```@example s3_new_mdls
 using AlgebraicPetri, AlgebraicPetri.TypedPetri
 using Catlab.CategoricalAlgebra, Catlab.WiringDiagrams
 
-const infectious_ontology = LabelledPetriNet(
-  [:Pop],
-  :infect=>((:Pop, :Pop)=>(:Pop, :Pop)),
-  :disease=>(:Pop=>:Pop),
-  :strata=>(:Pop=>:Pop)
-)
+const infectious_ontology = LabelledPetriNet([:Pop],
+                                             :infect => ((:Pop, :Pop) => (:Pop, :Pop)),
+                                             :disease => (:Pop => :Pop),
+                                             :strata => (:Pop => :Pop))
 
 Graph(infectious_ontology)
 ```
 
-
 ```@example s3_new_mdls
 using Catlab.Programs, Catlab.Graphics
 
-sir_uwd = @relation (S,I,R) where (S::Pop, I::Pop, R::Pop) begin
-  infect(S,I,I,I) # inf
-  disease(I,R) # rec
+sir_uwd = @relation (S, I, R) where {(S::Pop, I::Pop, R::Pop)} begin
+    infect(S, I, I, I) # inf
+    disease(I, R) # rec
 end
 
-to_graphviz(sir_uwd, box_labels=:name, junction_labels=:variable)
+to_graphviz(sir_uwd, box_labels = :name, junction_labels = :variable)
 ```
-
 
 ```@example s3_new_mdls
 base_names = [:inf, :rec]
@@ -43,25 +38,22 @@ Graph(dom(typed_sir))
 
 SIR model with death
 
-
 ```@example s3_new_mdls
-with_death_uwd = @relation (S,I,R,D) where (S::Pop, I::Pop, R::Pop, D::Pop) begin
-  base(S,I,R)
-  disease(I,D) # die
+with_death_uwd = @relation (S, I, R, D) where {(S::Pop, I::Pop, R::Pop, D::Pop)} begin
+    base(S, I, R)
+    disease(I, D) # die
 end
 
 sird_uwd = ocompose(with_death_uwd, 1, sir_uwd)
 
-to_graphviz(sird_uwd, box_labels=:name, junction_labels=:variable)
+to_graphviz(sird_uwd, box_labels = :name, junction_labels = :variable)
 ```
-
 
 ```@example s3_new_mdls
 typed_sird = oapply_typed(infectious_ontology, sird_uwd, [base_names; :die])
 
 Graph(dom(typed_sird))
 ```
-
 
 ```@example s3_new_mdls
 write_json_acset(dom(typed_sird), "scenario3_sird.json")
@@ -71,27 +63,24 @@ write_json_acset(dom(typed_sird), "scenario3_sird.json")
 
 SIR model with hospitalization
 
-
 ```@example s3_new_mdls
-with_hospital_uwd = @relation (S,I,R,H) where (S::Pop, I::Pop, R::Pop, H::Pop) begin
-  base(S,I,R)
-  disease(I,H) # hosp
-  disease(H,R) # hosp_rec
+with_hospital_uwd = @relation (S, I, R, H) where {(S::Pop, I::Pop, R::Pop, H::Pop)} begin
+    base(S, I, R)
+    disease(I, H) # hosp
+    disease(H, R) # hosp_rec
 end
 
 sirh_uwd = ocompose(with_hospital_uwd, 1, sir_uwd)
 
-to_graphviz(sirh_uwd, box_labels=:name, junction_labels=:variable)
+to_graphviz(sirh_uwd, box_labels = :name, junction_labels = :variable)
 ```
-
 
 ```@example s3_new_mdls
 typed_sirh = oapply_typed(infectious_ontology, sirh_uwd,
-  [base_names; [:hosp, :hosp_rec]])
+                          [base_names; [:hosp, :hosp_rec]])
 
 Graph(dom(typed_sirh))
 ```
-
 
 ```@example s3_new_mdls
 write_json_acset(dom(typed_sirh), "scenario3_sirh.json")
@@ -101,28 +90,26 @@ write_json_acset(dom(typed_sirh), "scenario3_sirh.json")
 
 SIR model with both hospitalization and death
 
-
 ```@example s3_new_mdls
-with_hospital_death_uwd = @relation (S,I,R,H,D) where (S::Pop, I::Pop, R::Pop, H::Pop, D::Pop) begin
-  base(S,I,R,H)
-  disease(I,D) # die
-  disease(H,D) # hosp_die
+with_hospital_death_uwd = @relation (S, I, R, H,
+                                     D) where {(S::Pop, I::Pop, R::Pop, H::Pop, D::Pop)} begin
+    base(S, I, R, H)
+    disease(I, D) # die
+    disease(H, D) # hosp_die
 end
 
 sirhd_uwd = ocompose(with_hospital_death_uwd, 1, sirh_uwd)
 
-to_graphviz(sirhd_uwd, box_labels=:name, junction_labels=:variable,
-  edge_attrs=Dict(:len => "0.75"))
+to_graphviz(sirhd_uwd, box_labels = :name, junction_labels = :variable,
+            edge_attrs = Dict(:len => "0.75"))
 ```
-
 
 ```@example s3_new_mdls
 typed_sirhd = oapply_typed(infectious_ontology, sirhd_uwd,
-  [base_names; [:hosp, :hosp_rec, :die, :hosp_die]])
+                           [base_names; [:hosp, :hosp_rec, :die, :hosp_die]])
 
 Graph(dom(typed_sirhd))
 ```
-
 
 ```@example s3_new_mdls
 write_json_acset(dom(typed_sirhd), "scenario3_sirhd.json")
@@ -132,39 +119,34 @@ write_json_acset(dom(typed_sirhd), "scenario3_sirhd.json")
 
 SIRHD model with vaccination.
 
-
 ```@example s3_new_mdls
-vaccination_uwd = @relation () where (U::Pop, V::Pop) begin
-  strata(U,V) # vac
-  infect(U,U,U,U)
-  infect(U,V,U,V)
-  infect(V,U,V,U)
-  infect(V,V,V,V)
+vaccination_uwd = @relation () where {(U::Pop, V::Pop)} begin
+    strata(U, V) # vac
+    infect(U, U, U, U)
+    infect(U, V, U, V)
+    infect(V, U, V, U)
+    infect(V, V, V, V)
 end
 
 typed_vaccination = oapply_typed(infectious_ontology, vaccination_uwd,
-  [:vac, :UU, :UV, :VU, :VV])
+                                 [:vac, :UU, :UV, :VU, :VV])
 
-to_graphviz(vaccination_uwd, box_labels=:name, junction_labels=:variable,
-  edge_attrs=Dict(:len => "1"), graph_attrs=Dict(:start => "2"))
+to_graphviz(vaccination_uwd, box_labels = :name, junction_labels = :variable,
+            edge_attrs = Dict(:len => "1"), graph_attrs = Dict(:start => "2"))
 ```
 
-
 ```@example s3_new_mdls
-typed_sirhd_aug = add_reflexives(
-  typed_sirhd, [[:strata],[],[],[],[]], infectious_ontology)
+typed_sirhd_aug = add_reflexives(typed_sirhd, [[:strata], [], [], [], []],
+                                 infectious_ontology)
 
-typed_vaccination_aug = add_reflexives(
-  typed_vaccination,
-  [[:disease], [:disease]],
-  infectious_ontology
-)
+typed_vaccination_aug = add_reflexives(typed_vaccination,
+                                       [[:disease], [:disease]],
+                                       infectious_ontology)
 
 typed_sirhd_vac = typed_product(typed_sirhd_aug, typed_vaccination_aug)
 
 Graph(dom(typed_sirhd_vac))
 ```
-
 
 ```@example s3_new_mdls
 write_json_acset(dom(typed_sirhd_vac), "scenario3_sirhd_vac.json")
@@ -174,26 +156,23 @@ write_json_acset(dom(typed_sirhd_vac), "scenario3_sirhd_vac.json")
 
 SIRHD model with vaccination *and* age stratification.
 
-
 ```@example s3_new_mdls
 for n in (2, 8)
-  names = [Symbol("Age$i") for i in 1:n]
-  typed_age = pairwise_id_typed_petri(infectious_ontology, :Pop, :infect, names)
+    names = [Symbol("Age$i") for i in 1:n]
+    typed_age = pairwise_id_typed_petri(infectious_ontology, :Pop, :infect, names)
 
-  typed_age_aug = add_reflexives(
-    typed_age,
-    repeat([[:disease, :strata]], n),
-    infectious_ontology
-  )
+    typed_age_aug = add_reflexives(typed_age,
+                                   repeat([[:disease, :strata]], n),
+                                   infectious_ontology)
 
-  typed_sirhd_vac_age = typed_product(typed_sirhd_vac, typed_age_aug)
-  net = dom(typed_sirhd_vac_age)
-  
-  write_json_acset(net, "scenario3_sirhd_vac_age$n.json")
-  
-  open("scenario3_sirhd_vac_age$n.svg", "w") do io
-    show(io, MIME("image/svg+xml"), Graph(net))
-  end
+    typed_sirhd_vac_age = typed_product(typed_sirhd_vac, typed_age_aug)
+    net = dom(typed_sirhd_vac_age)
+
+    write_json_acset(net, "scenario3_sirhd_vac_age$n.json")
+
+    open("scenario3_sirhd_vac_age$n.svg", "w") do io
+        show(io, MIME("image/svg+xml"), Graph(net))
+    end
 end
 ```
 
@@ -203,14 +182,13 @@ end
 
 SIR model with tested and untested infectives
 
-
 ```@example s3_new_mdls
-sirt_uwd = @relation (S,Iᵤ,Iₜ,R) where (S::Pop, Iᵤ::Pop, Iₜ::Pop, R::Pop) begin
-  infect(S,Iᵤ,Iᵤ,Iᵤ) # infᵤ
-  infect(S,Iₜ,Iᵤ,Iₜ) # infₜ
-  disease(Iᵤ,R) # recᵤ
-  disease(Iₜ,R) # recₜ
-  disease(Iᵤ,Iₜ) # test
+sirt_uwd = @relation (S, Iᵤ, Iₜ, R) where {(S::Pop, Iᵤ::Pop, Iₜ::Pop, R::Pop)} begin
+    infect(S, Iᵤ, Iᵤ, Iᵤ) # infᵤ
+    infect(S, Iₜ, Iᵤ, Iₜ) # infₜ
+    disease(Iᵤ, R) # recᵤ
+    disease(Iₜ, R) # recₜ
+    disease(Iᵤ, Iₜ) # test
 end
 
 sirt_names = [:infᵤ, :infₜ, :recᵤ, :recₜ, :test]
@@ -218,7 +196,6 @@ typed_sirt = oapply_typed(infectious_ontology, sirt_uwd, sirt_names)
 
 Graph(dom(typed_sirt))
 ```
-
 
 ```@example s3_new_mdls
 write_json_acset(dom(typed_sirt), "scenario3_sirt.json")
@@ -228,16 +205,13 @@ write_json_acset(dom(typed_sirt), "scenario3_sirt.json")
 
 Add vaccination to this model using stratification.
 
-
 ```@example s3_new_mdls
-typed_sirt_aug = add_reflexives(
-  typed_sirt, [[:strata],[],[],[]], infectious_ontology)
+typed_sirt_aug = add_reflexives(typed_sirt, [[:strata], [], [], []], infectious_ontology)
 
 typed_sirt_vac = typed_product(typed_sirt_aug, typed_vaccination_aug)
 
 Graph(dom(typed_sirt_vac))
 ```
-
 
 ```@example s3_new_mdls
 write_json_acset(dom(typed_sirt_vac), "scenario3_sirt_vac.json")
