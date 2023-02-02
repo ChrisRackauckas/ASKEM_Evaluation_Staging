@@ -1,9 +1,12 @@
 # Evaluation Scenario 3
 
 ```@example evalscenario3
-using EasyModelAnalysis, LinearAlgebra, CSV
+using EasyModelAnalysis, LinearAlgebra
+using CSV, DataFrames, Downloads
 using Catlab, AlgebraicPetri
 using Catlab.CategoricalAlgebra
+using ModelingToolkit.Symbolics: variable
+using ModelingToolkit: toparam
 ```
 
 ## Question 1
@@ -432,6 +435,114 @@ TA2.
 
 ## Question 5: Add Reinfection
 
+```@example evalscenario3
+sirhd_renew_sys = read_json_acset(LabelledPetriNet,"sirhd_renew.json")
+sirhd_renew_sys = structural_simplify(ODESystem(sirhd_renew_sys))
+sirhd_renew_sys = complete(sirhd_renew_sys)
+#@variables t
+#@parameters N
+#N_total = 334998398
+@unpack S, I, R, H, D, inf, rec, ideath, death, hosp, hrec, renew = sirhd_renew_sys
+@parameters N = 1
+param_sub = [
+    inf => inf / N
+]
+sirhd_renew_sys = substitute(sirhd_renew_sys, param_sub)
+defs = ModelingToolkit.defaults(sirhd_renew_sys)
+defs[S] = N_total - 10
+defs[I] = 10
+defs[H] = 0
+defs[D] = 0
+defs[R] = 0.0
+defs[N] = N_total
+defs[inf] = 0.5
+defs[rec] = 0.25
+defs[ideath] = 0.25
+defs[death] = 0.25
+defs[hosp] = 0.25
+defs[hrec] = 0.25
+defs[renew] = 0.1
+tspan = (0.0, 40.0)
+sirhd_renew_prob = ODEProblem(sirhd_renew_sys, [], tspan)
+sirhd_renew_sol = solve(sirhd_renew_prob)
+plot(sirhd_renew_sol)
+```
+```@example evalscenario3
+start_train = 171
+stop_train = 171+213
+start_test = 171+214
+stop_test = 171+214+151
+
+
+df_train = df_raw[start_train:stop_train, :]
+df_test = df_raw[start_test:stop_test, :]
+
+t_train = collect(0:(size(df_train, 1)-1))
+t_test = collect(0:(size(df_test, 1)-1))
+
+data_train = [
+S => N_total .- df_train.I .-  df_train.R .- df_train.D .- df_train.H,
+I => df_train.I, R => df_train.R, H => df_train.H, D => df_train.D
+]
+data_test = [
+S => N_total .- df_test.I .-  df_test.R .- df_test.D .- df_test.H,
+I => df_test.I, R => df_test.R, H => df_test.H, D => df_test.D
+]
+
+u0s = [
+S => N_total - df_train.I[1] - df_train.R[1] - df_train.H[1] - df_train.D[1],
+I => df_train.I[1], R => df_train.R[1], H => df_train.H[1], D => df_train.D[1]
+]
+_prob5 = remake(sirhd_renew_prob, u0 = u0s, tspan = (t_train[1], t_train[end]), p = [N => N_total])
+
+param_bounds = [
+    inf => [0.0, 70]
+    rec => [0.0, 5.0]
+    death => [0.0, 5.0]
+    ideath => [0.0, 5.0]
+    hosp => [0.0, 10.0]
+    hrec => [0.0, 10.0]
+    renew => [0.0, 10.0]
+]
+fitparams5 = global_datafit(_prob5, param_bounds, t_train, data_train)
+```
+```@example evalscenario3
+# Plot training fit
+_prob5_train = remake(_prob5, p = fitparams5)
+sol = solve(_prob5_train, saveat = t_train);
+
+plot(sol, idxs = S, color = cs[1])
+plot!(t_train, data_train[1][2], lab = "S_train", color = cs[2])
+
+plot!(sol, idxs = I, color = cs[3])
+plot!(t_train, data_train[2][2], lab = "I_train", color = cs[4])
+
+plot!(sol, idxs = R, color = cs[5])
+p = plot!(t_train, data_train[3][2], lab = "R_train", color = cs[6], dpi=300)
+```
+```@example evalscenario3
+savefig(p, "train_fit_S3_Q5.png")
+```
+```@example evalscenario3
+u0s = [
+S => N_total - df_test.I[1] - df_test.R[1] - df_test.H[1] - df_test.D[1],
+I => df_test.I[1], R => df_test.R[1], H => df_test.H[1], D => df_test.D[1]
+]
+_prob5 = remake(_prob5, p = fitparams5, u0=u0s, tspan = (t_test[1], t_test[end]))
+sol = solve(_prob5, saveat = t_test);
+
+plot(sol, idxs = S, color = cs[1])
+plot!(t_test, data_test[1][2], lab = "S_test", color = cs[2])
+
+plot!(sol, idxs = I, color = cs[3])
+plot!(t_test, data_test[2][2], lab = "I_test", color = cs[4])
+
+plot!(sol, idxs = R, color = cs[5])
+p = plot!(t_test, data_test[3][2], lab = "R_test", color = cs[6], dpi=300)
+```
+```@example evalscenario3
+savefig(p, "test_fit_S3_Q5.png")
+```
 Question 5 is the same analysis as questions 1, 2, 3, and 4 on a model with reinfection added. In order to build unit tests for
 the analysis and functionality, we started by building the model with vaccine by hand, awaiting a swap to the version from
 TA2.
