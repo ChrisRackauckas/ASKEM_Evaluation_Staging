@@ -188,9 +188,24 @@ fitparams = global_datafit(_prob, [inf => [0, 1.0], rec => [0.0, 1.0]], t_train,
                            maxiters = 1_000_000, loss = EasyModelAnalysis.relative_l2loss)
 ```
 
-which makes no substantial difference to the result.
+which makes no substantial difference to the result. This is because the "intuitive solution" is also worse in terms
+of relative loss:
 
-# Plot test fit
+```@example evalscenario3
+EasyModelAnalysis.relative_l2loss([0.363, 0.29],(_prob, pkeys, t_train, data_train))
+```
+
+```@example evalscenario3
+EasyModelAnalysis.relative_l2loss([fitparams[1][2],fitparams[2][2]],(_prob, pkeys, t_train, data_train))
+```
+
+In other words, while one may wish to fit the infected spike, doing so would cause the susceptible and recovered values
+to be so far off that it leads to more error than a bad fit of the infected. The SIR model is simply not a good fit
+to this data.
+
+### SIR Forecasting Plots
+
+Demonstrated are the forecasts with the best fitting SIR parameters
 
 ```@example evalscenario3
 # Plot testing fit
@@ -207,16 +222,10 @@ end..., dpi = 300)
 savefig("test_fit_S3_Q1.png")
 ```
 
-
-* Expect time series data on I + R
-* Start with an assumption on the recovery
-* Possible additoinal: alternative measure for recovery rate
-* Modeling assumption: use total infections from 2 weeks ago as R0, determine I0 and S0 from that
-* Need time series for total population of US over time
-
 ## Question 2: Add Hospitalizations and Deaths
 
 This expands the original SIR model to explore a model space comprising SIRD, SIRH, and SIRHD.
+
 ```@example evalscenario3
 sird = read_json_acset(LabelledPetriNet,"sird.json")
 sirh = read_json_acset(LabelledPetriNet,"sirh.json")
@@ -250,7 +259,7 @@ plot(sirhd_sol)
 
 Question 2 involves doing the same analysis as question one but on the SIR model with hospitalizations and deaths included.
 
-#### Data Ask
+#### Model Calibration
 
 ```@example evalscenario3
 data_train = [
@@ -276,8 +285,10 @@ param_bounds = [
     hosp => [0.0, 5.0]
     hrec => [0.0, 5.0]
 ]
-fitparams2 = global_datafit(_prob2, param_bounds, t_train, data_train, maxiters = 500_000)
+fitparams2 = global_datafit(_prob2, param_bounds, t_train, data_train, 
+                            maxiters = 500_000, loss = EasyModelAnalysis.relative_l2loss)
 ```
+
 ```@example evalscenario3
 # Plot training fit
 _prob2_train = remake(_prob2, p = fitparams2)
@@ -287,9 +298,11 @@ plot(map(data_train) do (var, num)
     plot!(t_train, num)
 end..., dpi = 300)
 ```
+
 ```@example evalscenario3
 savefig("train_fit_S3_Q2.png")
 ```
+
 ```@example evalscenario3
 u0s = [
 S => N_total - df_test.I[1] - df_test.R[1] - df_test.H[1] - df_test.D[1],
@@ -306,18 +319,10 @@ end..., dpi = 300)
 savefig("test_fit_S3_Q2.png")
 ```
 
-* Daily time series on number of patients admitted to the hospital all US
-* time series for mortality
-* 10 gig file on whether hospitalized or not => percentage for the difference in parameters
-    * Plot the percentage over time by month, see if a constant assumption is okay or not,
-    * If not, need to use the time series
-* Any factor for underreporting estimate? Wastewater time series
-
 ### Evaluate Model Forecasts
 
 In order to evaluate the model forecasts, we developed a functional which does the forecasting part with multiple models
-and puts a score on the forecast result. This score is calculated using the L2 norm. It was added to the EasyModelAnalysis.jl
-library in https://github.com/SciML/EasyModelAnalysis.jl/pull/129 as part of the evaluation on day 1.
+and puts a score on the forecast result. This score is calculated using the L2 norm.
 
 ```@example evalscenario3
 norm(solve(_prob, saveat = t_test)[S] - data_test[1][2]) +
@@ -371,12 +376,7 @@ Question 3 is the same analysis as questions 1 and 2 done on a model with vaccin
 the analysis and functionality, we started by building the model with vaccine by hand, awaiting a swap to the version from
 TA2.
 
-#### Data Asks
-
-* Time series of vaccinations
-* Hospitalization rate difference due to vaccination?
-* Recovery rate difference due to vaccination?
-* Mortality rate difference due to vaccination? Hospitalized and not hospitalized
+#### Model Calibration
 
 ```@example evalscenario3
 data_train = [(S+Sv) => N_total .- df_train.I .-  df_train.R .- df_train.H .-  df_train.D,
@@ -404,7 +404,8 @@ u0s = [S => (1-vac_rate)*(N_total-df_train.I[1]-df_train.R[1]-df_train.H[1]-df_t
        ]
 _prob3 = remake(prob3, u0 = u0s, tspan = (t_train[1], t_train[end]), p = [ps .=> 0.1; N => N_total])
 
-fitparams3 = global_datafit(_prob3, ps .=> ([0, 5.0],), t_train, data_train, maxiters = 200_000)
+fitparams3 = global_datafit(_prob3, ps .=> ([0, 5.0],), t_train, data_train, 
+                            maxiters = 200_000, loss = EasyModelAnalysis.relative_l2loss)
 ```
 
 ```@example evalscenario3
@@ -449,18 +450,6 @@ end...)
 
 ## Question 4: Age-Stratified Model
 
-Question 4 is the same analysis as questions 1, 2, and 3 on a model with age-stratification added. In order to build unit tests for
-the analysis and functionality, we started by building the model with vaccine by hand, awaiting a swap to the version from
-TA2.
-
-#### Data
-
-* Previous data that is age stratified is cases, and hospitalizations
-* 10 stratifications, by 10 years each
-* Underreporting over time?
-* Data for assumption on recovery rate with respect to age
-* Aggregated contact matrix for beta over age, from Scenario 1
-
 ## Question 5: Add Reinfection
 
 Question 5 is the same analysis as questions 1, 2, 3, and 4 on a model with
@@ -496,7 +485,7 @@ sirhd_sol = solve(sirhd_prob)
 plot(sirhd_sol)
 ```
 
-#### Data Ask
+#### Model Calibration
 
 ```@example evalscenario3
 start_train = 171
@@ -534,7 +523,8 @@ param_bounds = [
     hrec => [0.0, 5.0]
     renew => [0.0, 1.0]
 ]
-fitparams5 = global_datafit(_prob5, param_bounds, t_train, data_train, maxiters = 500_000)
+fitparams5 = global_datafit(_prob5, param_bounds, t_train, data_train, 
+                            maxiters = 500_000, loss = EasyModelAnalysis.relative_l2loss)
 ```
 ```@example evalscenario3
 # Plot training fit
@@ -564,14 +554,6 @@ end..., dpi = 300)
 savefig("test_fit_S3_Q5.png")
 ```
 
-#### Data Asks
-
-* Change in hospitalization for people who are reinfected
-* State of new york, people who reinfected?
-* Median time to reinfection
-* It may require R -> S ===> R -> S2
-* Maybe model recovered as vaccinated S?
-
 ## Question 6: New Data
 
 Question 6 is currently awaiting data from TA3
@@ -585,4 +567,4 @@ For each model, summarize your conclusions about the following:
 
 ### Answer
 
-Question 7 is currently awaiting data from TA3
+
