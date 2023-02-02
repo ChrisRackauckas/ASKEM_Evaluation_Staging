@@ -443,6 +443,17 @@ plot(sirhd_sol)
 #### Data Ask
 
 ```@example evalscenario3
+start_train = 171
+stop_train = 171+213
+start_test = 171+214
+stop_test = 171+214+151
+
+df_train = df_raw[start_train:stop_train, :]
+df_test = df_raw[start_test:stop_test, :]
+
+t_train = collect(0:(size(df_train, 1)-1))
+t_test = collect(0:(size(df_test, 1)-1))
+
 data_train = [
 S => N_total .- df_train.I .-  df_train.R .- df_train.D .- df_train.H,
 I => df_train.I, R => df_train.R, H => df_train.H, D => df_train.D
