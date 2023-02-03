@@ -127,6 +127,15 @@ sol = solve(prob)
 plt_a1 = plot(sol, leg = :topright)
 ```
 
+We showcase a probabilistic forecast of the number of infected over the three different age groups, young (`I_A1`), middle (`I_A2`) and old (`I_A3`). `LogNormal` priors are used for the elements of the contact matrix and `rec_disease` parameter. We use 50 samples from the prior distribution to generate the forecast for all cases of contact matrix variations below.
+
+```@example scenario1
+param_priors = create_priors(prob, fill(1 / 3, (3, 3)), 0.001)
+plot_uncertainty_forecast(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50, seriescolor = [:red :green :blue])
+```
+
+Instead of the entire samples, we can also plot the quantiles of the forecast and compare the effect of different values of variance of the prior distributions. This is also repeated for all different contact matrix variations below.
+
 ```@example scenario1
 _p = []
 for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
@@ -160,6 +169,11 @@ plt_a2 = plot(sol, leg = :topright)
 ```
 
 ```@example scenario1
+param_priors = create_priors(prob, contact_matrix, 0.001)
+plot_uncertainty_forecast(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50, seriescolor = [:red :green :blue])
+```
+
+```@example scenario1
 _p = []
 for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
     pltkwargs = i == 5 ? (;seriescolor = [:red :green :blue], label = ["Infected Young" "Infected Middle" "Infected Old"]) : (;seriescolor = [:red :green :blue])
@@ -177,6 +191,11 @@ plot(_p..., layout = (1, 5), size = (1600, 300), plot_title = "Infected with var
 prob = scenario1([2k, 2k, 2k], Diagonal(contact_matrix), numinfected = 1)
 sol = solve(prob)
 plt_a3 = plot(sol, leg = :topright)
+```
+
+```@example scenario1
+param_priors = create_priors(prob, Diagonal(contact_matrix), 0.001)
+plot_uncertainty_forecast(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50, seriescolor = [:red :green :blue])
 ```
 
 ```@example scenario1
@@ -199,6 +218,10 @@ sol = solve(prob)
 plt_a4 = plot(sol, leg = :topright)
 ```
 
+```@example scenario1
+param_priors = create_priors(prob, 0.5 * uniform_matrix, 0.001)
+plot_uncertainty_forecast(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50, seriescolor = [:red :green :blue])
+```
 
 ```@example scenario1
 _p = []
@@ -217,6 +240,21 @@ plot(_p..., layout = (1, 5), size = (1600, 300), plot_title = "Infected with var
 scaling = Diagonal([0.9, 0.8, 0.4])
 sol = solve(scenario1([2k, 2k, 2k], scaling * uniform_matrix, numinfected = 1))
 plt_a5 = plot(sol, leg = :topright)
+```
+
+```@example scenario1
+param_priors = create_priors(prob, scaling * uniform_matrix, 0.001)
+plot_uncertainty_forecast(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50, seriescolor = [:red :green :blue])
+```
+
+```@example scenario1
+_p = []
+for (i,var) in enumerate([0.0001, 0.001, 0.01, 0.1, 1])
+    pltkwargs = i == 5 ? (;seriescolor = [:red :green :blue], label = ["Infected Young" "Infected Middle" "Infected Old"]) : (;seriescolor = [:red :green :blue])
+    param_priors = create_priors(prob, scaling * uniform_matrix, var)
+    push!(_p, plot_uncertainty_forecast_quantiles(prob, [variable( Symbol("I_A1(t)")), variable( Symbol("I_A2(t)")), variable( Symbol("I_A3(t)"))], 0.0:1:100.0, param_priors, 50; pltkwargs...))
+end
+plot(_p..., layout = (1, 5), size = (1600, 300), plot_title = "Infected with varying priors", legend = :outerright)
 ```
 
 Now we combine all the plots into one to allow easy comparison.
